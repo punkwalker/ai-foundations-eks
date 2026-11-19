@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 from aif.argocd import APPLICATIONS, STAGE_LABEL, list_applications
+from aif.keep import is_kept
 from aif.kube import KubeApi, KubeError, Obj, Resource, list_crds
 from aif.stages import Stage
 
@@ -25,7 +26,6 @@ SOURCES: tuple[Source, ...] = ("argocd", "kro", "ack", "aws")
 UNASSIGNED = "unassigned"
 RGDS = Resource("kro.run", "v1alpha1", "resourcegraphdefinitions", "ResourceGraphDefinition", False)
 ACK_GROUP_SUFFIX = ".services.k8s.aws"
-STACK_TAG = "aws:cloudformation:stack-name"
 
 
 @dataclass(frozen=True)
@@ -122,8 +122,11 @@ def ack_resources(api: KubeApi, where: str, crds: Iterable[Resource]) -> list[It
 def tag_sweep(
     tagging: "ResourceGroupsTaggingAPIClient", project: str, keep_stacks: Iterable[str] = ()
 ) -> list[Item]:
-    """Every AWS resource in this Region tagged `project=<project>`, minus kept stacks."""
-    keep = set(keep_stacks)
+    """Every AWS resource in this Region tagged `project=<project>`, minus kept ones.
+
+    A resource is kept when it is a kept stack, belongs to one, or is tagged aif:keep=true.
+    """
+    keep = tuple(keep_stacks)
     items: list[Item] = []
     pages = tagging.get_paginator("get_resources").paginate(
         TagFilters=[{"Key": "project", "Values": [project]}]
@@ -131,9 +134,9 @@ def tag_sweep(
     for page in pages:
         for res in page.get("ResourceTagMappingList", []):
             tags = {t["Key"]: t["Value"] for t in res.get("Tags", [])}
-            if tags.get(STACK_TAG) in keep:
-                continue
             arn = res.get("ResourceARN", "")
+            if is_kept(arn, tags, keep):
+                continue
             items.append(
                 Item(
                     source="aws",

@@ -18,9 +18,10 @@ ArgoCdMode = Literal["capability", "helm"]
 ARGOCD_MODES: tuple[ArgoCdMode, ...] = ("capability", "helm")
 
 GROUPS: tuple[str, ...] = ("base", "a", "b", "c", "d", "e", "capstone")
-"""Stage groups, in bring-up order."""
+"""Stage groups, in bring-up order. Only base is shared."""
 
-DEFAULT_TAGS: Mapping[str, str] = {"project": "ai-foundations-eks", "owner": "punkwalker"}
+DEFAULT_TAGS: Mapping[str, str] = {"project": "ai-foundations-eks"}
+"""Add an `owner` tag in aif.toml or with AIF_OWNER_TAG. The repository sets none."""
 DEFAULT_CONFIG_NAME = "aif.toml"
 
 
@@ -42,7 +43,7 @@ class KubeContexts:
 
 @dataclass(frozen=True)
 class Settings:
-    """Every setting aif reads. Defaults match the plan."""
+    """Every setting aif reads. Defaults fit the workshop account."""
 
     region: str = "us-west-2"
     project_tags: Mapping[str, str] = field(default_factory=lambda: dict(DEFAULT_TAGS))
@@ -52,7 +53,9 @@ class Settings:
     hub_cluster: str = "hub"
     contexts: KubeContexts = field(default_factory=KubeContexts)
     keep_stacks: tuple[str, ...] = ()
-    """CloudFormation stacks that `aif down` must never delete, such as the launch stack."""
+    """Extra CloudFormation stacks that `aif down` must never delete."""
+    launch_stack_parameter: str = "/aif/launch-stack-name"
+    """SSM parameter that holds the name of the launch stack. `aif down` keeps that stack."""
 
     @property
     def project(self) -> str:
@@ -119,6 +122,7 @@ def apply_values(settings: Settings, values: Mapping[str, Any]) -> Settings:
         "hub_cluster",
         "contexts",
         "keep_stacks",
+        "launch_stack_parameter",
     }
     unknown = set(values) - known
     if unknown:
@@ -150,6 +154,7 @@ def values_from_env(env: Mapping[str, str]) -> dict[str, Any]:
         "AIF_ARGOCD_NAMESPACE": "argocd_namespace",
         "AIF_HUB_CLUSTER": "hub_cluster",
         "AIF_KEEP_STACKS": "keep_stacks",
+        "AIF_LAUNCH_STACK_PARAMETER": "launch_stack_parameter",
     }
     for var, key in simple.items():
         if var in env:
@@ -188,4 +193,8 @@ def load(
                 raise ConfigError(f"{path}: {err}") from err
     elif "AIF_CONFIG" in env:
         raise ConfigError(f"AIF_CONFIG points to {path}, which does not exist")
-    return apply_values(settings, values_from_env(env))
+    settings = apply_values(settings, values_from_env(env))
+    if "AIF_OWNER_TAG" in env:
+        tags = {**settings.project_tags, "owner": env["AIF_OWNER_TAG"]}
+        settings = apply_values(settings, {"project_tags": tags})
+    return settings
