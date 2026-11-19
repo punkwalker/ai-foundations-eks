@@ -5,7 +5,7 @@ id: "09"
 name: Session isolation
 group: d
 needs: ["00", "01"]
-# Plan budget: 4-8 min.
+# Budget: 4-8 min.
 budget_minutes: 8
 health_checks:
   - warm-pool-ready-equals-spec

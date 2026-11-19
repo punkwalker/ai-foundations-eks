@@ -4,12 +4,12 @@ id: "00"
 name: Fleet tenancy
 group: base
 needs: []
-# Plan budget: 5-8 min after the clusters exist. aif uses the upper bound.
-budget_minutes: 8
+# 15 min: Team on both spokes plus Keycloak, SAML trust and SCIM sync.
+budget_minutes: 15
 health_checks:
   - team-alpha-active-on-dev
   - team-alpha-active-on-prod
-  # Keycloak joins the Base group.
+  # Keycloak and IAM Identity Center sign-in belong to the Base group.
   - keycloak-ready
   - idc-saml-trust-active
   - idc-scim-syncing

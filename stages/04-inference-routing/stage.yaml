@@ -4,7 +4,7 @@ id: "04"
 name: Inference routing
 group: b
 needs: ["00", "01", "03"]
-# Plan budget: 3-6 min after the GPU node is warm.
+# Budget: 3-6 min after the GPU node is warm.
 budget_minutes: 6
 health_checks:
   - models-endpoint-lists-model
