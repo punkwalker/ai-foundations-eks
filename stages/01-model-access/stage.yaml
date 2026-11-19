@@ -1,0 +1,8 @@
+---
+id: "01"
+name: Governed model access
+group: base
+needs: ["00"]
+# Set by the stage worker after the first measured bring-up.
+budget_minutes: null
+health_checks: []

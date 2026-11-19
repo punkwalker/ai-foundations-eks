@@ -1,0 +1,8 @@
+---
+id: "00"
+name: Fleet tenancy
+group: base
+needs: []
+# Set by the stage worker after the first measured bring-up.
+budget_minutes: null
+health_checks: []

@@ -1,0 +1,9 @@
+---
+id: "11"
+name: Supply chain
+group: e
+needs: ["00", "01"]
+# Guards what groups b and c create, when they are on.
+# Set by the stage worker after the first measured bring-up.
+budget_minutes: null
+health_checks: []

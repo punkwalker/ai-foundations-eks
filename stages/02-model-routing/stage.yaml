@@ -1,0 +1,9 @@
+---
+id: "02"
+name: Cost-aware routing
+group: a
+needs: ["00", "01"]
+# Falls back to a Bedrock small model when group b is off.
+# Set by the stage worker after the first measured bring-up.
+budget_minutes: null
+health_checks: []

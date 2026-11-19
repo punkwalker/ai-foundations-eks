@@ -1,0 +1,9 @@
+---
+id: "09"
+name: Session isolation
+group: d
+needs: ["00", "01"]
+# Uses stage 08 when it is on; does not require it.
+# Set by the stage worker after the first measured bring-up.
+budget_minutes: null
+health_checks: []

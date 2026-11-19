@@ -1,0 +1,8 @@
+---
+id: "04"
+name: Inference routing
+group: b
+needs: ["00", "01", "03"]
+# Set by the stage worker after the first measured bring-up.
+budget_minutes: null
+health_checks: []

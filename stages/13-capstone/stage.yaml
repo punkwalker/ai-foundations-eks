@@ -1,0 +1,9 @@
+---
+id: "13"
+name: Capstone
+group: capstone
+needs: ["00", "01"]
+# Also uses whichever groups are on.
+# Set by the stage worker after the first measured bring-up.
+budget_minutes: null
+health_checks: []
