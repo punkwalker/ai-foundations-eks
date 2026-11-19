@@ -28,10 +28,6 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "N", "SIM", "RUF"]
 
-[tool.ruff.lint.per-file-ignores]
-# pytest uses plain assert statements by design.
-"tests/**" = ["S101"]
-
 [tool.mypy]
 strict = true
 python_version = "3.12"

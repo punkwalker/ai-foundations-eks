@@ -1,39 +1,52 @@
-"""Tests for the aif command line stubs."""
+"""Tests for the aif command line stubs.
 
-import pytest
+These tests use unittest assertion methods instead of bare `assert`, so that
+bandit (rule B101) and ASH report no findings on them.
+"""
+
+import io
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
 
 from aif import __version__
 from aif.cli import NOT_IMPLEMENTED_EXIT, main
 
-
-def test_version_prints_package_version(capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit) as exc:
-        main(["--version"])
-    assert exc.value.code == 0
-    assert capsys.readouterr().out.strip() == f"aif {__version__}"
-
-
-@pytest.mark.parametrize(
-    "argv",
-    [
-        ["up"],
-        ["down"],
-        ["status"],
-        ["doctor"],
-        ["cost"],
-        ["stage", "on", "03"],
-        ["cleanup", "--report"],
-    ],
+STUB_COMMANDS = (
+    ["up"],
+    ["down"],
+    ["status"],
+    ["doctor"],
+    ["cost"],
+    ["stage", "on", "03"],
+    ["stage", "off", "13"],
+    ["cleanup", "--report"],
 )
-def test_stub_commands_exit_not_implemented(
-    argv: list[str], capsys: pytest.CaptureFixture[str]
-) -> None:
-    assert main(argv) == NOT_IMPLEMENTED_EXIT
-    assert "not implemented" in capsys.readouterr().err
+
+ARGPARSE_USAGE_EXIT = 2
 
 
-@pytest.mark.parametrize("bad", ["3", "14", "ab"])
-def test_stage_rejects_bad_id(bad: str) -> None:
-    with pytest.raises(SystemExit) as exc:
-        main(["stage", "on", bad])
-    assert exc.value.code == 2
+class VersionTest(unittest.TestCase):
+    def test_version_prints_package_version(self) -> None:
+        out = io.StringIO()
+        with redirect_stdout(out), self.assertRaises(SystemExit) as exc:
+            main(["--version"])
+        self.assertEqual(exc.exception.code, 0)
+        self.assertEqual(out.getvalue().strip(), f"aif {__version__}")
+
+
+class StubCommandTest(unittest.TestCase):
+    def test_stub_commands_exit_not_implemented(self) -> None:
+        for argv in STUB_COMMANDS:
+            with self.subTest(argv=argv):
+                err = io.StringIO()
+                with redirect_stderr(err):
+                    code = main(argv)
+                self.assertEqual(code, NOT_IMPLEMENTED_EXIT)
+                self.assertIn("not implemented", err.getvalue())
+
+    def test_stage_rejects_bad_id(self) -> None:
+        for bad in ("3", "14", "ab"):
+            with self.subTest(stage=bad):
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as exc:
+                    main(["stage", "on", bad])
+                self.assertEqual(exc.exception.code, ARGPARSE_USAGE_EXIT)
