@@ -39,7 +39,13 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "N", "SIM", "RUF"]
 strict = true
 python_version = "3.12"
 files = ["src", "tests"]
+# The Kubernetes client ships no type hints. Only aif/kube.py calls it.
+untyped_calls_exclude = ["kubernetes"]
+
+[[tool.mypy.overrides]]
+module = ["kubernetes", "kubernetes.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-ra --cov=aif --cov-report=term-missing"
