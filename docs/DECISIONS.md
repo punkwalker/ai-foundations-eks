@@ -5,7 +5,7 @@ These are the owner's design decisions as of November 18, 2026. The repo split r
 | # | Decision |
 |---|---|
 | D1 | The content repo pushes each branch to Workshop Studio and to the owner's GitLab project, after ASH is clean. |
-| D2 | This repo is private until the owner makes it public. Work happens on `dev`, and only the owner touches `main`. |
+| D2 | This repo is public as of November 19, 2026. Work happens on `dev`, and only the owner touches `main`. |
 | D3 | CloudFormation creates only the IDE and its VPC. The IDE builds everything else. |
 | D4 | Lab infra uses the internal workshop CDK constructs. Task R1 reviews them and picks the language before W2 starts. |
 | D5 | Provisioning code is the typed Python tool `aif`. The Taskfile runs one command per task, and the repo has no shell scripts. |
