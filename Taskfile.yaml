@@ -67,4 +67,5 @@ tasks:
     desc: Run ASH on the whole repo and fail on any finding
     cmd: >-
       ash --mode container --source-dir . --output-dir .ash
-      --fail-on-findings --fail-on-incomplete-scanners
+      --fail-on-findings --fail-on-incomplete-scanners --min-severity none
+      --config-overrides global_settings.severity_threshold=ALL
