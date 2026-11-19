@@ -4,7 +4,7 @@ id: "10"
 name: Session lifecycle
 group: d
 needs: ["00", "01", "09"]
-# Plan budget: 3-5 min.
+# Budget: 3-5 min.
 budget_minutes: 5
 health_checks:
   - suspend-resume-keeps-disk-state

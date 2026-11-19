@@ -5,7 +5,7 @@ id: "11"
 name: Supply chain
 group: e
 needs: ["00", "01"]
-# Plan budget: 1-2 min.
+# Budget: 1-2 min.
 budget_minutes: 2
 health_checks:
   - unsigned-image-refused

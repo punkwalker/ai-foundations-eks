@@ -5,7 +5,7 @@ id: "02"
 name: Cost-aware routing
 group: a
 needs: ["00", "01"]
-# Plan budget: 1-2 min.
+# Budget: 1-2 min.
 budget_minutes: 2
 health_checks:
   - golden-prompts-route-to-expected-tier

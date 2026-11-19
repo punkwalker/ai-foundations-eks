@@ -4,7 +4,7 @@ id: "12"
 name: Observe and evaluate
 group: e
 needs: ["00", "01"]
-# Plan budget: 6-10 min.
+# Budget: 6-10 min.
 budget_minutes: 10
 health_checks:
   - eval-job-completes

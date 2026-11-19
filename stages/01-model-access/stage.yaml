@@ -4,7 +4,7 @@ id: "01"
 name: Governed model access
 group: base
 needs: ["00"]
-# Plan budget: 12-15 min. The database is the long pole and starts at t=0.
+# Budget: 12-15 min. The database is the long pole and starts at t=0.
 budget_minutes: 15
 health_checks:
   - litellm-readiness-200

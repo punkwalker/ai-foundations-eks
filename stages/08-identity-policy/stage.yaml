@@ -4,7 +4,7 @@ id: "08"
 name: Identity and policy
 group: c
 needs: ["00", "01", "07"]
-# Plan budget: 2-3 min.
+# Budget: 2-3 min.
 budget_minutes: 3
 health_checks:
   - ungranted-tool-returns-403
