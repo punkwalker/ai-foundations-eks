@@ -1,0 +1,16 @@
+---
+extends: default
+
+ignore: |
+  .venv/
+  aif/.venv/
+  .ash/
+
+rules:
+  line-length:
+    max: 160
+  # GitHub Actions uses `on:` as a key; check values only.
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
