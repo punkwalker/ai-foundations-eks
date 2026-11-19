@@ -33,9 +33,9 @@ class ConfigError(ValueError):
 class KubeContexts:
     """kubeconfig context names for the three clusters."""
 
-    hub: str = "hub"
-    dev: str = "dev"
-    prod: str = "prod"
+    hub: str = "aif-hub"
+    dev: str = "aif-dev"
+    prod: str = "aif-prod"
 
     def as_dict(self) -> dict[str, str]:
         return {"hub": self.hub, "dev": self.dev, "prod": self.prod}

@@ -1,4 +1,4 @@
-"""`aif up`: turn stages on in order and wait for their Applications.
+"""Stage bring-up for `aif up`: turn stages on in order and wait for their Applications.
 
 A failed stage stops only its own group: later stages in the same
 group are skipped, other groups carry on. A failed Base stage stops everything.
@@ -7,11 +7,11 @@ group are skipped, other groups carry on. A failed Base stage stops everything.
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 
-from aif.argocd import STAGE_LABEL, refresh_all, wait_for_apps
-from aif.kube import KubeApi
+from aif.argocd import STAGE_LABEL, list_applicationsets, refresh_all, wait_for_apps
+from aif.kube import KubeApi, KubeError, is_transient
 from aif.labels import group_label, set_labels
 from aif.stages import Stage
-from aif.waiting import Clock
+from aif.waiting import Clock, WaitTimeoutError, until
 
 TIMEOUT_FACTOR = 2
 """Each stage may take twice its budget before aif gives up on it."""
@@ -41,6 +41,42 @@ def format_plan(order: Sequence[Stage]) -> str:
         f"{n}. stage {s.id} [{s.group}] {s.name}: timeout {stage_timeout(s):.0f}s"
         for n, s in enumerate(order, 1)
     )
+
+
+def wait_for_argocd(
+    hub: KubeApi,
+    namespace: str,
+    timeout: float,
+    clock: Clock | None = None,
+) -> str | None:
+    """Wait until the Hub serves the Argo CD ApplicationSet API.
+
+    Returns None when ready, or the reason it is not ready after `timeout`.
+    """
+
+    def check() -> tuple[bool, str]:
+        try:
+            list_applicationsets(hub, namespace)
+        except KubeError as err:
+            if not is_transient(err):
+                raise
+            return False, f"Argo CD API not ready: {err}"
+        return True, ""
+
+    try:
+        until(check, timeout=timeout, what="Argo CD on the Hub", describe=str, clock=clock)
+    except WaitTimeoutError as err:
+        return str(err)
+    except KubeError as err:
+        return f"Argo CD API error: {err}"
+    return None
+
+
+def seed_group_labels(
+    hub: KubeApi, namespace: str, secret: str, groups: Sequence[str]
+) -> dict[str, bool]:
+    """Turn on the label of each enabled group. Stage labels follow, one stage at a time."""
+    return set_labels(hub, namespace, secret, {group_label(g): True for g in groups})
 
 
 def bring_up(

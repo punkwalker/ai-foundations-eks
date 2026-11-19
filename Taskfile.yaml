@@ -6,8 +6,8 @@ version: "3"
 
 tasks:
   up:
-    desc: "Print the bring-up plan. Example: task up -- --confirm-account ID --apply"
-    cmd: uv run --directory aif aif up {{.CLI_ARGS}}
+    desc: "Build the lab. Needs AIF_CONFIRM_ACCOUNT set to the 12-digit account id"
+    cmd: uv run --directory aif aif up --apply {{.CLI_ARGS}}
 
   down:
     desc: "Print the teardown plan. Example: task down -- --confirm-account ID --apply"

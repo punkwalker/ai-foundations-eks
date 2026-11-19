@@ -13,8 +13,10 @@ Then, once for the whole lab:
 
 5. Delete agent IAM roles under `/aif/agents/`.
 6. Clear load balancers and free network interfaces that block VPC deletion.
-7. Delete the remaining CloudFormation stacks tagged with the project, except kept stacks.
-8. Sweep by tag again. The teardown succeeds only if the sweep finds nothing.
+7. Remove the Hub: its capabilities, then the cluster, then the platform (roles,
+   KMS key, bucket, ECR repositories, secrets), waiting for each (HubApi).
+8. Delete the remaining CloudFormation stacks tagged with the project, except kept stacks.
+9. Sweep by tag again. The teardown succeeds only if the sweep finds nothing.
 
 Removing finalizers by force needs `force_finalizers=True`, and each one is logged.
 """
@@ -28,6 +30,7 @@ from typing import TYPE_CHECKING
 
 from aif import predelete
 from aif.argocd import missing_cascade_finalizer
+from aif.hub_api import CapabilityState, CapabilityType, HubApi, HubError
 from aif.inventory import Inventory, Item, tag_sweep
 from aif.kube import KubeApi, KubeError, Resource
 from aif.labels import off_labels, read_labels, set_labels
@@ -69,6 +72,7 @@ class Options:
     force_finalizers: bool = False
     stage_timeout: float = 900.0
     stack_timeout: float = 1800.0
+    hub_timeout: float = 1800.0
 
 
 @dataclass
@@ -90,6 +94,8 @@ class Teardown:
     opts: Options
     log: Log = print
     clock: Clock = field(default_factory=Clock)
+    hub_api: HubApi | None = None
+    """Removes the Hub. None skips that step (for example when aif.hub is not built)."""
 
     def run(self, inventory: Inventory, stage_order: Sequence[str]) -> Result:
         result = Result()
@@ -210,9 +216,37 @@ class Teardown:
                     self.aws.ec2, self.aws.elbv2, blockers, self.opts.include_untagged
                 )
             )
+        if self.hub_api is not None and not self._remove_hub(self.hub_api, result):
+            return
         stacks = [i.arn for i in inventory.items if i.kind == "cloudformation/stack"]
         for problem in self._delete_stacks(stacks):
             result.fail(problem)
+
+    def _remove_hub(self, hub: HubApi, result: Result) -> bool:
+        """Capabilities, then the cluster, then the platform. Stops at the first failure."""
+        try:
+            hub.delete_capabilities()
+            self._wait_hub(lambda: _left(hub.capability_status()), "Hub capabilities to go")
+            self.log("Hub capabilities removed")
+            hub.delete_hub()
+            self._wait_hub(lambda: _hub_left(hub), "the Hub cluster to go")
+            self.log("Hub cluster removed")
+            hub.delete_platform()
+            self.log("Hub platform removed")
+        except (WaitTimeoutError, HubError) as err:
+            result.fail(f"Hub removal stopped: {err}")
+            return False
+        return True
+
+    def _wait_hub(self, left: Callable[[], str], what: str) -> None:
+        until(
+            lambda: ((v := left()) == "", v),
+            timeout=self.opts.hub_timeout,
+            what=what,
+            describe=lambda v: f"still present: {v}",
+            interval=15.0,
+            clock=self.clock,
+        )
 
     def _report(self, step: predelete.StepResult) -> None:
         self.log(f"{step.step}: {len(step.done)} done")
@@ -256,6 +290,20 @@ class Teardown:
             result.fail(f"final tag sweep found {len(left)} resources tagged project")
         else:
             self.log("final tag sweep: zero resources tagged project")
+
+
+def _left(states: Mapping[CapabilityType, CapabilityState]) -> str:
+    failed = [k for k, v in states.items() if "FAILED" in v.status]
+    if failed:
+        raise HubError(f"capabilities {failed} failed to delete")
+    return ", ".join(f"{k}={v.status}" for k, v in states.items())
+
+
+def _hub_left(hub: HubApi) -> str:
+    state = hub.hub_status()
+    if state is not None and "FAILED" in state.status:
+        raise HubError(f"{state.name} is {state.status}")
+    return "" if state is None else f"{state.name}={state.status}"
 
 
 def _res(item: Item) -> Resource:
