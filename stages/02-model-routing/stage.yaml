@@ -1,9 +1,11 @@
 ---
+# Stage 02.
+# Group a falls back to a Bedrock small model when group b is off, so 03 and 04 are not needs.
 id: "02"
 name: Cost-aware routing
 group: a
 needs: ["00", "01"]
-# Falls back to a Bedrock small model when group b is off.
-# Set by the stage worker after the first measured bring-up.
-budget_minutes: null
-health_checks: []
+# Plan budget: 1-2 min.
+budget_minutes: 2
+health_checks:
+  - golden-prompts-route-to-expected-tier

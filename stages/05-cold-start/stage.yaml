@@ -1,8 +1,10 @@
 ---
+# Stage 05.
 id: "05"
 name: Cold start
 group: b
 needs: ["00", "01", "03", "04"]
-# Set by the stage worker after the first measured bring-up.
-budget_minutes: null
-health_checks: []
+# Plan budget: 3-5 min.
+budget_minutes: 5
+health_checks:
+  - scale-zero-to-one-first-token-in-target

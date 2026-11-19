@@ -1,8 +1,12 @@
 ---
+# Stage 01.
 id: "01"
 name: Governed model access
 group: base
 needs: ["00"]
-# Set by the stage worker after the first measured bring-up.
-budget_minutes: null
-health_checks: []
+# Plan budget: 12-15 min. The database is the long pole and starts at t=0.
+budget_minutes: 15
+health_checks:
+  - litellm-readiness-200
+  - test-key-gets-bedrock-reply
+  - over-budget-key-refused

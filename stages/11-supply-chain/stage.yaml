@@ -1,9 +1,12 @@
 ---
+# Stage 11.
+# Stage 11 guards what groups b and c create, but does not need them.
 id: "11"
 name: Supply chain
 group: e
 needs: ["00", "01"]
-# Guards what groups b and c create, when they are on.
-# Set by the stage worker after the first measured bring-up.
-budget_minutes: null
-health_checks: []
+# Plan budget: 1-2 min.
+budget_minutes: 2
+health_checks:
+  - unsigned-image-refused
+  - unsigned-model-refused

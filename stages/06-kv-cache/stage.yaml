@@ -1,8 +1,10 @@
 ---
+# Stage 06 (optional).
 id: "06"
 name: KV cache
 group: b
 needs: ["00", "01", "03", "04"]
-# Set by the stage worker after the first measured bring-up.
-budget_minutes: null
-health_checks: []
+# Plan budget: 2 min.
+budget_minutes: 2
+health_checks:
+  - cache-hit-metric-rises-on-replay

@@ -1,8 +1,11 @@
 ---
+# Stage 04.
 id: "04"
 name: Inference routing
 group: b
 needs: ["00", "01", "03"]
-# Set by the stage worker after the first measured bring-up.
-budget_minutes: null
-health_checks: []
+# Plan budget: 3-6 min after the GPU node is warm.
+budget_minutes: 6
+health_checks:
+  - models-endpoint-lists-model
+  - first-token-via-litellm-small

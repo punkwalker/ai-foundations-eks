@@ -1,9 +1,12 @@
 ---
+# Stage 09.
+# Group d uses stage 08 when it is on, so 08 is not a need.
 id: "09"
 name: Session isolation
 group: d
 needs: ["00", "01"]
-# Uses stage 08 when it is on; does not require it.
-# Set by the stage worker after the first measured bring-up.
-budget_minutes: null
-health_checks: []
+# Plan budget: 4-8 min.
+budget_minutes: 8
+health_checks:
+  - warm-pool-ready-equals-spec
+  - claim-binds-under-5s

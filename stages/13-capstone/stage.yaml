@@ -1,9 +1,12 @@
 ---
+# Stage 13.
+# The capstone uses whichever groups are on, and aif always runs it last.
 id: "13"
 name: Capstone
 group: capstone
 needs: ["00", "01"]
-# Also uses whichever groups are on.
-# Set by the stage worker after the first measured bring-up.
+# The plan gives no budget: stage 13 adds no infrastructure.
 budget_minutes: null
-health_checks: []
+health_checks:
+  - new-agent-runs-in-prod
+  - platform-diff-empty
