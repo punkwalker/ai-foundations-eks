@@ -1,13 +1,13 @@
 resource,stage,qty,unit_price_usd_per_hour,hours,est_cost_usd,price_source,created_by,notes
-EKS control plane,00,3,0.10,8,2.40,Price List API AmazonEKS USW2-AmazonEKS-Hours:perCluster (2026-11-19),W2/W3,"Hub, Dev, and Prod (AifCluster*). Standard support only; extended support is 0.50 per hour"
+EKS control plane,00,3,0.10,8,2.40,Price List API AmazonEKS USW2-AmazonEKS-Hours:perCluster (2026-11-19),W2/W3,"Hub (aif hub up), Dev and Prod (PlatformCluster RGD). Standard support only; extended support is 0.50 per hour"
 EKS Auto Mode management fee,00,per node,0.00816,verify,verify,Price List API AmazonEKS USW2-EKS-Auto:c6g.large-management-hours (2026-11-19),W2/W3,"Per managed node, by instance type. 0.00816 is c6g.large; m7g.large is 0.00979"
 General nodes (Graviton),00,3-6,0.068,verify,verify,Price List API AmazonEC2 USW2-BoxUsage:c6g.large (2026-11-19),W2/W3,"Example size c6g.large. Right-size after the first measured bring-up. Zero nodes while no pod is scheduled"
-NAT gateway,00,1,0.045,8,0.36,Price List API AmazonEC2 USW2-NatGateway-Hours (2026-11-19),W2/W3,"One shared NAT gateway (D6, AifNetworkStandIn in the dev account). Plus 0.045 per GB processed"
-Public IPv4 address (NAT gateway EIP),00,1,0.005,8,0.04,Price List API AmazonVPC USW2-PublicIPv4:InUseAddress (2026-11-19),W3,AifNetworkStandIn
-EKS capability ACK,00,1,0.004757,8,0.04,Price List API AmazonEKS USW2-AmazonEKSCapabilities-ACK-Hours:perCapability (2026-11-19),W3,"Hub (AifCapabilitiesHub). Plus 0.000048 per ACK resource per hour"
-EKS capability kro,00,1,0.004757,8,0.04,Price List API AmazonEKS USW2-AmazonEKSCapabilities-KRO-Hours:perCapability (2026-11-19),W3,"Hub (AifCapabilitiesHub). Plus 0.000047 per RGD instance per hour"
+NAT gateway,00,1,0.045,8,0.36,Price List API AmazonEC2 USW2-NatGateway-Hours (2026-11-19),W2/W3,"One shared NAT gateway (D6; aif dev network stand-in in the dev account). Plus 0.045 per GB processed"
+Public IPv4 address (NAT gateway EIP),00,1,0.005,8,0.04,Price List API AmazonVPC USW2-PublicIPv4:InUseAddress (2026-11-19),W3,aif dev network stand-in
+EKS capability ACK,00,1,0.004757,8,0.04,Price List API AmazonEKS USW2-AmazonEKSCapabilities-ACK-Hours:perCapability (2026-11-19),W3,"Hub. Plus 0.000048 per ACK resource per hour"
+EKS capability kro,00,1,0.004757,8,0.04,Price List API AmazonEKS USW2-AmazonEKSCapabilities-KRO-Hours:perCapability (2026-11-19),W3,"Hub; one more per spoke with kro on. Plus 0.000047 per RGD instance per hour"
 EKS capability Argo CD,00,1,0.028838,8,0.23,Price List API AmazonEKS USW2-AmazonEKSCapabilities-ArgoCD-Hours:perCapability (2026-11-19),W3,"Hub, capability mode only. Plus 0.00142 per Argo CD Application per hour"
-KMS customer managed keys,00,4,0.00137,8,0.04,Price List API awskms us-west-2-KMS-Keys (2026-11-19),W3,"1 USD per key per month (730 h): flow logs key plus one per cluster. Plus 0.03 per 10000 requests"
+KMS customer managed key,00,1,0.00137,8,0.01,Price List API awskms us-west-2-KMS-Keys (2026-11-19),W3,"1 USD per key per month (730 h): alias/aif-platform, shared by all aif clusters. Plus 0.03 per 10000 requests"
 Secrets Manager secrets,00,2,0.000548,8,0.01,Price List API AWSSecretsManager USW2-AWSSecretsManager-Secrets (2026-11-19),W3,"0.40 per secret per month (730 h): aif/keycloak/admin and aif/litellm/master-key"
 CloudWatch Logs (EKS control plane and VPC flow logs),00,usage,usage,verify,verify,Price List API AmazonCloudWatch USW2-DataProcessing-Bytes and USW2-VendedLog-Bytes (2026-11-19),W3,"0.50 per GB ingested, 0.03 per GB-month stored. Retention 7 days"
 S3 model bucket,00,usage,usage,verify,verify,Price List API AmazonS3 USW2-TimedStorage-ByteHrs (2026-11-19),W3,"0.023 per GB-month (first 50 TB). Weights and compile caches"
