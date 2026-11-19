@@ -1,11 +1,8 @@
 ---
 # Thin launcher. Each task runs exactly one command (decision D5).
-# Provisioning logic lives in the aif Python package, not here.
+# Provisioning logic lives in the aif Python package.
+# Every tool comes from mise.toml (decision D11); run `mise install` first.
 version: "3"
-
-vars:
-  UVX: uvx --python 3.13
-  KUBECONFORM_IMAGE: ghcr.io/yannh/kubeconform:v0.8.0@sha256:faffaf43f95aa6425306e1ab8d6fcad72acb9049158f38e574c085ea1ec0f64e
 
 tasks:
   up:
@@ -47,12 +44,10 @@ tasks:
     cmd: uv run --directory aif mypy
 
   lint:yaml:
-    cmd: "{{.UVX}} yamllint@1.38.0 --strict ."
+    cmd: yamllint --strict .
 
   lint:kube:
-    cmd: >-
-      docker run --rm -v "{{.ROOT_DIR}}:/repo:ro" {{.KUBECONFORM_IMAGE}}
-      -strict -summary -ignore-missing-schemas /repo/platform /repo/workloads
+    cmd: kubeconform -strict -summary -ignore-missing-schemas platform workloads
 
   scan:
     desc: Run ASH on the whole repo and fail on any finding
