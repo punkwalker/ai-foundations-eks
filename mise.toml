@@ -1,0 +1,22 @@
+# Tool versions for this repository (decision D11).
+# Run `mise install` once; CI uses the same file and mise.lock.
+# Python packages for aif (ruff, mypy, pytest) are pinned in aif/uv.lock.
+
+[settings]
+lockfile = true
+
+[tools]
+python = "3.12.16"
+uv = "0.13.9"
+# Node LTS, for a TypeScript CDK app in infra/ if one is added.
+node = "24.22.3"
+# go-task, the Taskfile.yaml runner.
+task = "3.54.0"
+kubectl = "1.37.2"
+aws-cli = "2.41.0"
+gh = "2.105.0"
+"pipx:yamllint" = "1.38.0"
+kubeconform = "0.8.0"
+# Automated Security Helper, pinned by GitHub tag v3.8.0 (see docs/DECISIONS.md, D11).
+# Do not install it from PyPI: the PyPI name belongs to an unrelated placeholder package.
+"pipx:awslabs/automated-security-helper" = "v3.8.0"
