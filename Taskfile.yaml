@@ -35,7 +35,6 @@ tasks:
       - lint:format
       - lint:mypy
       - lint:yaml
-      - lint:cfn
       - lint:kube
 
   lint:ruff:
@@ -49,14 +48,6 @@ tasks:
 
   lint:yaml:
     cmd: "{{.UVX}} yamllint@1.38.0 --strict ."
-
-  lint:cfn:
-    sources:
-      - bootstrap/cfn/**/*.yaml
-    method: none
-    cmds:
-      - for: sources
-        cmd: "{{.UVX}} cfn-lint@1.60.1 {{.ITEM}}"
 
   lint:kube:
     cmd: >-

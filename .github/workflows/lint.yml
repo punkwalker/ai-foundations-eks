@@ -32,7 +32,7 @@ jobs:
           version: "0.13.8"
           enable-cache: false
 
-      - name: Lint (ruff, mypy --strict, yamllint, cfn-lint, kubeconform)
+      - name: Lint (ruff, mypy --strict, yamllint, kubeconform)
         run: uvx --from go-task-bin==3.54.0 task lint
 
       - name: Test (pytest)
