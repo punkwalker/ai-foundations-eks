@@ -33,15 +33,15 @@ Table note: eight top-level folders (count) in this repository as of November 19
 
 | Command | Action |
 |---|---|
-| `task up` | Build the lab |
-| `task down` | Remove the lab |
+| `task up` | Print the bring-up plan, or build the lab with `-- --confirm-account ID --apply` |
+| `task down` | Print the teardown plan, or remove the lab with `-- --confirm-account ID --apply` |
 | `task status` | Show the state of each stage |
-| `task doctor` | Check local tools and access |
+| `task doctor` | Show the Argo CD mode, sign-in method, identity, and health |
 | `task lint` | Run linters and type checks |
 | `task test` | Run unit tests |
 | `task scan` | Run ASH |
 
-Table note: seven tasks (count) in `Taskfile.yaml` as of November 19, 2026, one per row. Each task runs one command. The first four print "not implemented" until the `aif` commands exist.
+Table note: seven tasks (count) in `Taskfile.yaml` as of November 19, 2026, one per row. Each task runs one command. `up` and `down` refuse to run unless `--confirm-account` matches the account of the current AWS credentials.
 
 ## Contributing and security
 

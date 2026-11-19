@@ -6,19 +6,19 @@ version: "3"
 
 tasks:
   up:
-    desc: Build the lab
-    cmd: uv run --directory aif aif up
+    desc: "Print the bring-up plan. Example: task up -- --confirm-account ID --apply"
+    cmd: uv run --directory aif aif up {{.CLI_ARGS}}
 
   down:
-    desc: Remove the lab
-    cmd: uv run --directory aif aif down
+    desc: "Print the teardown plan. Example: task down -- --confirm-account ID --apply"
+    cmd: uv run --directory aif aif down {{.CLI_ARGS}}
 
   status:
     desc: Show the state of each stage
     cmd: uv run --directory aif aif status
 
   doctor:
-    desc: Check local tools and access
+    desc: Show Argo CD mode, sign-in, identity, and health
     cmd: uv run --directory aif aif doctor
 
   test:
