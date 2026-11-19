@@ -2,9 +2,11 @@
 
 This repository builds the lab environment for the AI Foundations on Amazon EKS workshop. The workshop content lives in a separate Workshop Studio repository.
 
+The launch CloudFormation template lives in the content repository. It creates the IDE, its VPC, GitLab behind CloudFront, and IAM Identity Center.
+
 ## Start-up sequence
 
-1. A CloudFormation template in `bootstrap/cfn/` creates the IDE instance and its VPC.
+1. The launch template from the content repository creates the IDE instance and its VPC.
 2. On first boot, the IDE installs uv, clones this repository, and runs `task up`.
 3. `task up` runs the `aif` command line tool, which builds the rest of the lab from the IDE.
 
@@ -13,8 +15,7 @@ This repository builds the lab environment for the AI Foundations on Amazon EKS 
 | Folder | Contents |
 |---|---|
 | `aif/` | Python command line tool that provisions and checks the lab |
-| `bootstrap/cfn/` | CloudFormation template for the IDE and VPC |
-| `infra/` | CDK app for the lab infrastructure |
+| `infra/` | Our own CDK app in TypeScript, only if needed |
 | `platform/` | Argo CD ApplicationSets, kro RGDs, addon values, and Kyverno policies |
 | `stages/` | One folder for each of the 14 workshop stages |
 | `workloads/` | Sample agents, MCP servers, and skills |
@@ -22,7 +23,7 @@ This repository builds the lab environment for the AI Foundations on Amazon EKS 
 | `cost/` | Cost sheet for every billable resource |
 | `docs/` | Design decisions |
 
-Table note: nine top-level folders (count) in this repository as of November 19, 2026, one per row. Each folder has its own README.
+Table note: eight top-level folders (count) in this repository as of November 19, 2026, one per row. Each folder except `docs/` has its own README.
 
 ## Common tasks
 

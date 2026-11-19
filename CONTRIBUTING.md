@@ -29,8 +29,9 @@ task scan
 
 ## Code rules
 
+- Do not depend on internal-only packages. This repository must stay ready to become public.
 - Write provisioning logic in Python, in the `aif` package. The `Taskfile.yaml` runs one command for each task.
-- Do not add shell scripts. The only shell allowed is the IDE first-boot script in the CloudFormation template, at most 10 lines.
+- Do not add shell scripts. The IDE first-boot script, at most 10 lines, lives in the launch template in the content repository.
 - Call AWS with boto3 and Kubernetes with the Kubernetes Python client. Do not call the `aws` or `kubectl` command line tools from Python.
 - Pin every container image by digest, and every Helm chart and Git ref by version.
 - Pin every GitHub Action by its full commit SHA.

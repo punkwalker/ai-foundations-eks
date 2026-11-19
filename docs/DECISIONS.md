@@ -1,6 +1,6 @@
 # Decisions
 
-These are the owner's design decisions as of November 18, 2026.
+These are the owner's design decisions as of November 18, 2026. The repo split revises D3 and D4.
 
 | # | Decision |
 |---|---|
@@ -13,6 +13,8 @@ These are the owner's design decisions as of November 18, 2026.
 | D7 | Slow parts are built at provisioning. The lab applies only RGDs and apps. |
 | D8 | Kargo handles promotion. Dapr and Temporal both stay as options for durable agents. Nightly runs come later. |
 | D9 | Content stays in the owner's GitLab for now. A move to a shared team group comes later. |
+| D3 revised | The launch CloudFormation creates the IDE, its VPC, GitLab behind CloudFront, and the IAM Identity Center instance. It lives in the content repo. This repo holds only what the IDE brings up, and only configures Identity Center groups and Argo CD role mappings. |
+| D4 revised | The content repo builds the launch template from the internal workshop CDK constructs. This repo depends on no internal-only package, and uses its own TypeScript CDK only if needed. |
 | D10 | Stages form groups. Only Base is shared, and groups B to E do not depend on each other. |
 
-Table note: ten decisions (count) in force as of November 18, 2026, one per row. D2 also covers the GitLab mirror on the IDE. Source is the owner's design decisions.
+Table note: twelve rows (count) as of November 19, 2026, one decision per row. The two revised rows come from the repo split and replace D3 and D4 where they differ. D2 also covers the GitLab mirror on the IDE. Source is the owner's design decisions.
