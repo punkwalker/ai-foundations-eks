@@ -1,0 +1,42 @@
+[project]
+name = "aif"
+version = "0.1.0"
+description = "Provisioning CLI for the AI Foundations on Amazon EKS workshop"
+readme = "README.md"
+license = "MIT-0"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+aif = "aif.cli:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18",
+    "pytest>=8.4",
+    "ruff>=0.14",
+]
+
+[build-system]
+requires = ["uv_build>=0.9,<1"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "N", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest uses plain assert statements by design.
+"tests/**" = ["S101"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
