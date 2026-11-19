@@ -1,12 +1,15 @@
-"""Test fakes: an in-memory Kubernetes API and a clock that never sleeps."""
+"""Test fakes: an in-memory Kubernetes API, Hub, and a clock that never sleeps."""
 
 import copy
+from collections.abc import Mapping
+from dataclasses import replace
 from typing import Any
 
 import botocore.session
 from botocore import UNSIGNED
 from botocore.config import Config
 
+from aif.hub_api import CapabilityState, CapabilityType, ClusterState, LaunchInputs
 from aif.kube import CRDS, KubeError, Obj, Resource
 from aif.waiting import Clock
 
@@ -155,6 +158,22 @@ class FakeKube:
         _merge(current, body)
         return copy.deepcopy(current)
 
+    def create_secret(self, namespace: str, body: Obj) -> Obj:
+        name = body["metadata"]["name"]
+        self._maybe_fail("create-secret", name)
+        if (namespace, name) in self.secrets:
+            raise KubeError(409, "AlreadyExists", f"secret {name} exists")
+        self.secrets[(namespace, name)] = copy.deepcopy(body)
+        return copy.deepcopy(body)
+
+    def list_secrets(self, namespace: str, label_selector: str = "") -> list[Obj]:
+        self._maybe_fail("list-secrets", namespace)
+        return [
+            copy.deepcopy(s)
+            for (ns, _), s in sorted(self.secrets.items())
+            if ns == namespace and _matches(s, label_selector)
+        ]
+
 
 def app(
     name: str,
@@ -186,4 +205,95 @@ def offline_client(service: str) -> Any:
     session = _BOTOCORE_SESSION
     return session.create_client(
         service, region_name="us-west-2", config=Config(signature_version=UNSIGNED)
+    )
+
+
+class FakeHub:
+    """An in-memory HubApi. Each status call moves a CREATING or DELETING thing one step."""
+
+    def __init__(self, region: str = "us-west-2") -> None:
+        self.region = region
+        self.calls: list[str] = []
+        self.cluster: ClusterState | None = None
+        self.caps: dict[CapabilityType, CapabilityState] = {}
+        self.fail_cluster = False
+        self.fail_capability: CapabilityType | None = None
+        self.stuck = False
+        """True keeps everything in its CREATING or DELETING state."""
+
+    def ensure_platform(self, inputs: LaunchInputs) -> None:
+        self.calls.append("ensure_platform")
+
+    def ensure_hub(self, inputs: LaunchInputs) -> None:
+        self.calls.append("ensure_hub")
+        if self.cluster is None:
+            arn = f"arn:aws:eks:{self.region}:111122223333:cluster/aif-hub"
+            self.cluster = ClusterState("aif-hub", arn, "CREATING", "https://hub.example", "Q0E=")
+
+    def hub_status(self) -> ClusterState | None:
+        c = self.cluster
+        if c is None or self.stuck:
+            return c
+        if c.status == "CREATING":
+            self.cluster = replace(c, status="FAILED" if self.fail_cluster else "ACTIVE")
+        elif c.status == "DELETING":
+            self.cluster = None
+        return c
+
+    def ensure_capabilities(self, inputs: LaunchInputs, argocd_mode: str) -> None:
+        self.calls.append(f"ensure_capabilities:{argocd_mode}")
+        types: tuple[CapabilityType, ...] = (
+            ("argocd", "kro", "ack") if argocd_mode == "capability" else ("kro", "ack")
+        )
+        for t in types:
+            self.caps.setdefault(t, CapabilityState(t, f"arn:cap/{t}", "CREATING"))
+
+    def capability_status(self) -> Mapping[CapabilityType, CapabilityState]:
+        now = dict(self.caps)
+        if not self.stuck:
+            for t, cap in list(self.caps.items()):
+                if cap.status == "CREATING":
+                    bad = t == self.fail_capability
+                    status = "CREATE_FAILED" if bad else "ACTIVE"
+                    self.caps[t] = replace(cap, status=status, reason="quota" if bad else "")
+                elif cap.status == "DELETING":
+                    del self.caps[t]
+        return now
+
+    def delete_capabilities(self) -> None:
+        self.calls.append("delete_capabilities")
+        self.caps = {t: replace(c, status="DELETING") for t, c in self.caps.items()}
+
+    def delete_hub(self) -> None:
+        self.calls.append("delete_hub")
+        if self.cluster is not None:
+            self.cluster = replace(self.cluster, status="DELETING")
+
+    def delete_platform(self) -> None:
+        self.calls.append("delete_platform")
+
+
+class FakeDevNetwork:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def ensure(self) -> LaunchInputs:
+        self.calls.append("ensure")
+        return launch_inputs()
+
+    def delete(self) -> None:
+        self.calls.append("delete")
+
+
+def launch_inputs() -> LaunchInputs:
+    return LaunchInputs(
+        region="us-west-2",
+        vpc_id="vpc-1",
+        public_subnet_ids=("subnet-a",),
+        private_subnet_ids=("subnet-b", "subnet-c"),
+        admin_role_arn="arn:aws:iam::111122223333:role/Admin",
+        ide_role_arn="arn:aws:iam::111122223333:role/ide",
+        ide_security_group_id="sg-1",
+        launch_stack_name="launch",
+        idc_instance_arn="arn:aws:sso:::instance/ssoins-1",
     )

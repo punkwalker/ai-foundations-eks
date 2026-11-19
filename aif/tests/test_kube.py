@@ -120,3 +120,9 @@ class ClientKubeApiTest(unittest.TestCase):
         self.assertIsNone(self.api.get_secret("argocd", "hub"))
         self.core.patch_namespaced_secret.return_value = "patched"
         self.assertEqual(self.api.patch_secret("argocd", "hub", {}), {"s": "patched"})
+        self.core.create_namespaced_secret.return_value = "created"
+        self.assertEqual(self.api.create_secret("argocd", {}), {"s": "created"})
+        self.core.api_client.sanitize_for_serialization.side_effect = lambda o: {"items": [o]}
+        self.core.list_namespaced_secret.return_value = {"metadata": {"name": "dev"}}
+        self.assertEqual(self.api.list_secrets("argocd", "x=y"), [{"metadata": {"name": "dev"}}])
+        self.core.list_namespaced_secret.assert_called_once_with("argocd", label_selector="x=y")
