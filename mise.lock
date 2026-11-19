@@ -5,9 +5,11 @@ version = "2.41.0"
 backend = "aqua:aws/aws-cli"
 
 [tools.aws-cli."platforms.linux-arm64"]
+checksum = "sha256:a1bdbb55835d5e5159f7ad9ad4f55bcce838565a2f12aded2aefee2f4bf71d0a"
 url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.41.0.zip"
 
 [tools.aws-cli."platforms.linux-x64"]
+checksum = "sha256:41c0e2d33e30ff34f0fcac8ec2a013d8c3b95100cf7d4bd1007302b7d4f655e5"
 url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.41.0.zip"
 
 [tools.aws-cli."platforms.macos-arm64"]
