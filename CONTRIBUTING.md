@@ -15,6 +15,12 @@ This repository holds the infrastructure for the AI Foundations on Amazon EKS wo
 - Do not mix a refactor and a feature in one commit.
 - Do not commit generated files or vendored code.
 
+## Set up tools
+
+Install [mise](https://mise.jdx.dev/), then run `mise install` from the repository root. It installs every tool at the version pinned in `mise.toml` and checked against `mise.lock`. Do not install tools with apt, brew, or a manual download.
+
+To add or update a tool, edit `mise.toml`, then run `mise lock --platform linux-x64,linux-arm64,macos-arm64` and commit both files.
+
 ## Before you push
 
 Run these commands from the repository root:

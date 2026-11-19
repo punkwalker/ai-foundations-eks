@@ -7,7 +7,7 @@ The launch CloudFormation template lives in the content repository. It creates t
 ## Start-up sequence
 
 1. The launch template from the content repository creates the IDE instance and its VPC.
-2. On first boot, the IDE installs uv, clones this repository, and runs `task up`.
+2. On first boot, the IDE installs mise, clones this repository, runs `mise install`, and runs `task up`.
 3. `task up` runs the `aif` command line tool, which builds the rest of the lab from the IDE.
 
 ## Layout
@@ -24,6 +24,10 @@ The launch CloudFormation template lives in the content repository. It creates t
 | `docs/` | Design decisions |
 
 Table note: eight top-level folders (count) in this repository as of November 19, 2026, one per row. Each folder except `docs/` has its own README.
+
+## Tools
+
+[mise](https://mise.jdx.dev/) manages every tool this repository needs. The versions are pinned in `mise.toml` and `mise.lock`. Install mise, then run `mise install` from the repository root. CI uses the same files.
 
 ## Common tasks
 
