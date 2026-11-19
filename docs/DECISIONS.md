@@ -18,7 +18,7 @@ These are the owner's design decisions as of November 18, 2026. The repo split r
 | D10 | Stages form groups. Only Base is shared, and groups B to E do not depend on each other. |
 | D11 | Tools are managed by mise (mise.toml); no apt/brew install steps anywhere |
 
-Table note: thirteen rows (count) as of November 19, 2026, one decision per row. The two revised rows come from the repo split and replace D3 and D4 where they differ. D2 also covers the GitLab mirror on the IDE. Source is the owner's design decisions. The owner added D11 in chat on November 19, 2026.
+Table note: thirteen rows (count) as of November 19, 2026, one decision per row. The two revised rows come from the repo split and replace D3 and D4 where they differ. D2 also covers the GitLab mirror on the IDE. The owner added D11 on November 19, 2026.
 
 ## IDE first-boot script (for the content worker)
 
