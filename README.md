@@ -33,7 +33,7 @@ Table note: eight top-level folders (count) in this repository as of November 19
 
 | Command | Action |
 |---|---|
-| `task up` | Print the bring-up plan, or build the lab with `-- --confirm-account ID --apply` |
+| `task up` | Build the lab. Set `AIF_CONFIRM_ACCOUNT` to the 12-digit account id first |
 | `task down` | Print the teardown plan, or remove the lab with `-- --confirm-account ID --apply` |
 | `task status` | Show the state of each stage |
 | `task doctor` | Show the Argo CD mode, sign-in method, identity, and health |
