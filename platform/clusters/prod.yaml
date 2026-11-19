@@ -1,0 +1,11 @@
+---
+# The Prod workload cluster, built on the Hub from the PlatformCluster RGD.
+apiVersion: platform.aws/v1alpha1
+kind: PlatformCluster
+metadata:
+  name: prod
+  namespace: platform-clusters
+spec:
+  name: prod
+  env: prod
+  version: "1.37"

@@ -1,0 +1,11 @@
+---
+# The Dev workload cluster, built on the Hub from the PlatformCluster RGD.
+apiVersion: platform.aws/v1alpha1
+kind: PlatformCluster
+metadata:
+  name: dev
+  namespace: platform-clusters
+spec:
+  name: dev
+  env: dev
+  version: "1.37"
