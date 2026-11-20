@@ -18,7 +18,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "boto3-stubs", extra = ["cloudformation", "ec2", "ecr", "eks", "elbv2", "iam", "resourcegroupstaggingapi", "s3", "secretsmanager", "ssm", "sts"] },
+    { name = "boto3-stubs", extra = ["cloudformation", "ec2", "ecr", "eks", "elbv2", "iam", "identitystore", "kms", "logs", "resourcegroupstaggingapi", "s3", "secretsmanager", "ssm", "sso-admin", "sts"] },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -35,7 +35,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "boto3-stubs", extras = ["cloudformation", "ec2", "ecr", "eks", "elbv2", "iam", "resourcegroupstaggingapi", "s3", "secretsmanager", "ssm", "sts"], specifier = ">=1.44.6" },
+    { name = "boto3-stubs", extras = ["cloudformation", "ec2", "ecr", "eks", "elbv2", "iam", "identitystore", "kms", "logs", "resourcegroupstaggingapi", "s3", "secretsmanager", "ssm", "sso-admin", "sts"], specifier = ">=1.44.6" },
     { name = "mypy", specifier = ">=1.18" },
     { name = "pytest", specifier = ">=8.4" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
@@ -347,6 +347,15 @@ elbv2 = [
 iam = [
     { name = "mypy-boto3-iam" },
 ]
+identitystore = [
+    { name = "mypy-boto3-identitystore" },
+]
+kms = [
+    { name = "mypy-boto3-kms" },
+]
+logs = [
+    { name = "mypy-boto3-logs" },
+]
 resourcegroupstaggingapi = [
     { name = "mypy-boto3-resourcegroupstaggingapi" },
 ]
@@ -358,6 +367,9 @@ secretsmanager = [
 ]
 ssm = [
     { name = "mypy-boto3-ssm" },
+]
+sso-admin = [
+    { name = "mypy-boto3-sso-admin" },
 ]
 sts = [
     { name = "mypy-boto3-sts" },
@@ -1143,6 +1155,33 @@ wheels = [
 ]
 
 [[package]]
+name = "mypy-boto3-identitystore"
+version = "1.44.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/40/f563ee3f4bef9cf32b181a9795a06f285e66dbd3ef96c11b62b7f98d051b/mypy_boto3_identitystore-1.44.1.tar.gz", hash = "sha256:574e2d9614cf214b4419732ae8346c3bb5708f8994852de1a859762d6c033d96", size = 20255, upload-time = "2026-11-11T22:44:37.834Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/c9/ee71a8d790904fa465ba4c584668125337fbfdf14c93b94730fc9d1c5fe3/mypy_boto3_identitystore-1.44.1-py3-none-any.whl", hash = "sha256:9ef5d1dc6f535cd23a847808d4a29b46c6b826f517c1bacb62a7741c27d5029c", size = 27376, upload-time = "2026-11-11T22:44:34.799Z" },
+]
+
+[[package]]
+name = "mypy-boto3-kms"
+version = "1.44.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/ad/937f7f7fd870ae9d765e959973a15b8f0baad40aa88c8d27fd158661247d/mypy_boto3_kms-1.44.4.tar.gz", hash = "sha256:abe8644f6fc6683ec97730da54173aef3a9e30260f0b4ec0cf75f805c2fc4bc7", size = 31426, upload-time = "2026-11-17T02:43:17.176Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/8e/5159dc8be2ec980ac0bfd1d81ff9122a2535bd8c3e2b3fbd07a10c1f6445/mypy_boto3_kms-1.44.4-py3-none-any.whl", hash = "sha256:e8636bb34c3bd50f80de1976cf5844e640600dce3dab2a1238f0fdbcfbedbc84", size = 39882, upload-time = "2026-11-17T02:43:14.871Z" },
+]
+
+[[package]]
+name = "mypy-boto3-logs"
+version = "1.44.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/b9/e8b14f74b294871b4fc70020ca4be7131987d049a68979ffbfa4ee9d02cd/mypy_boto3_logs-1.44.0.tar.gz", hash = "sha256:e7137e60790884fc8665bffcb37022a3051e08a02b90ea17c786b2d25fbcacf3", size = 56578, upload-time = "2026-11-10T21:54:45.404Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/2b/a8973296de4b3b4a923310ed879f09a9d5c201d0f5cb707eb495d558fda2/mypy_boto3_logs-1.44.0-py3-none-any.whl", hash = "sha256:a474fba064e6122b2a5061a7882cbd84ad2b69ab8c412825542dbef8601ba332", size = 63958, upload-time = "2026-11-10T21:54:42.228Z" },
+]
+
+[[package]]
 name = "mypy-boto3-resourcegroupstaggingapi"
 version = "1.44.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1176,6 +1215,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/be/6e/06f434a99efa3537ad7e302146033546aea6da2ccb044b61fafaf926d489/mypy_boto3_ssm-1.44.3.tar.gz", hash = "sha256:d1c26fa323064cae474dec943a68de6db9d626c39af849cf7fbb26d276109039", size = 99198, upload-time = "2026-11-13T21:36:01.426Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c3/d4/a42e19ef230ed34ceea5beddc27fa0bc774dea6ef4917ea58ee2a446c397/mypy_boto3_ssm-1.44.3-py3-none-any.whl", hash = "sha256:b0e1ca222cfb4f1a3d6a88cc822831e83037796e44f509d602ee43d8297cdd17", size = 100877, upload-time = "2026-11-13T21:35:57.632Z" },
+]
+
+[[package]]
+name = "mypy-boto3-sso-admin"
+version = "1.44.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/e1/6be30a6d0a0c3a18683450f6977403536a964903f9496bddcf8e860dbea8/mypy_boto3_sso_admin-1.44.2.tar.gz", hash = "sha256:b8e9e8cd749d4428282912ff7e1a3797f14179b588fa215d81b101e75d44c944", size = 41494, upload-time = "2026-11-13T00:33:14.764Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f9/e9/f9fb569f42317db4ecbad36ba39c6d8f7a80daaf747d90a6f3ccbe944fd0/mypy_boto3_sso_admin-1.44.2-py3-none-any.whl", hash = "sha256:dac72d3a053d1ba8d8adb4134a5ae16ff8b5c8cd67944d595934cf266dcea0e0", size = 45885, upload-time = "2026-11-13T00:33:12.716Z" },
 ]
 
 [[package]]

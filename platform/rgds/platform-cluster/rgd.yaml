@@ -1,0 +1,244 @@
+---
+# PlatformCluster: the platform team's API for a new workload cluster (Dev, Prod, more).
+# kro on the Hub composes ACK resources: IAM roles, an EKS Auto Mode cluster, access
+# entries, the kro capability, and the Argo CD cluster Secret that registers it.
+#
+# Account-specific values (ARNs, subnets) never live in Git. aif writes them from SSM
+# into the ConfigMap `aif-platform` in this namespace; the RGD reads it as an externalRef.
+# ACK runs these resources with the role aif-ack-platform-clusters (IAMRoleSelector).
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: platformcluster.platform.aws
+  labels:
+    app.kubernetes.io/part-of: ai-foundations-eks
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: PlatformCluster
+    group: platform.aws
+    spec:
+      name: string | required=true description="Short name; the cluster is aif-<name>"
+      env: string | required=true enum="dev,prod" description="Argo CD label platform.aws/env"
+      version: string | default="1.37" description="EKS Kubernetes version, 1.36 or later"
+      kro: boolean | default=true description="Add the managed kro capability"
+      argocd: boolean | default=true description="Give the managed Argo CD capability access (capability mode)"
+    status:
+      clusterARN: ${cluster.status.ackResourceMetadata.arn}
+      endpoint: ${cluster.status.endpoint}
+      phase: ${cluster.status.status}
+
+  resources:
+    - id: platform
+      externalRef:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: aif-platform
+          namespace: platform-clusters
+
+    - id: clusterRole
+      template:
+        apiVersion: iam.services.k8s.aws/v1alpha1
+        kind: Role
+        metadata:
+          name: ${schema.spec.name}-cluster
+        spec:
+          name: aif-${schema.spec.name}-cluster
+          path: /aif/
+          description: EKS Auto Mode cluster role for aif-${schema.spec.name}
+          permissionsBoundary: ${platform.data.boundaryARN}
+          assumeRolePolicyDocument: >-
+            {"Version":"2012-10-17","Statement":[{"Effect":"Allow",
+            "Principal":{"Service":"eks.amazonaws.com"},"Action":["sts:AssumeRole","sts:TagSession"]}]}
+          policies:
+            - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+            - arn:aws:iam::aws:policy/AmazonEKSComputePolicy
+            - arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy
+            - arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy
+            - arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy
+          tags:
+            - {key: project, value: ai-foundations-eks}
+            - {key: stage, value: platform}
+            - {key: env, value: "${schema.spec.env}"}
+
+    - id: nodeRole
+      template:
+        apiVersion: iam.services.k8s.aws/v1alpha1
+        kind: Role
+        metadata:
+          name: ${schema.spec.name}-node
+        spec:
+          name: aif-${schema.spec.name}-node
+          path: /aif/
+          description: EKS Auto Mode node role for aif-${schema.spec.name}
+          permissionsBoundary: ${platform.data.boundaryARN}
+          assumeRolePolicyDocument: >-
+            {"Version":"2012-10-17","Statement":[{"Effect":"Allow",
+            "Principal":{"Service":"ec2.amazonaws.com"},"Action":["sts:AssumeRole"]}]}
+          policies:
+            - arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy
+            - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly
+          tags:
+            - {key: project, value: ai-foundations-eks}
+            - {key: stage, value: platform}
+            - {key: env, value: "${schema.spec.env}"}
+
+    - id: cluster
+      readyWhen:
+        - ${cluster.status.status == "ACTIVE"}
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: Cluster
+        metadata:
+          name: ${schema.spec.name}
+        spec:
+          name: aif-${schema.spec.name}
+          version: ${schema.spec.version}
+          roleRef:
+            from:
+              name: ${clusterRole.metadata.name}
+          resourcesVPCConfig:
+            subnetIDs: ${platform.data.privateSubnetIDs.split(",")}
+            endpointPrivateAccess: true
+            endpointPublicAccess: false
+          accessConfig:
+            authenticationMode: API
+            bootstrapClusterCreatorAdminPermissions: false
+          bootstrapSelfManagedAddons: false
+          computeConfig:
+            enabled: true
+            nodePools: [general-purpose, system]
+            nodeRoleARN: ${nodeRole.status.ackResourceMetadata.arn}
+          storageConfig:
+            blockStorage:
+              enabled: true
+          kubernetesNetworkConfig:
+            ipFamily: ipv4
+            elasticLoadBalancing:
+              enabled: true
+          encryptionConfig:
+            - resources: [secrets]
+              provider:
+                keyARN: ${platform.data.keyARN}
+          logging:
+            clusterLogging:
+              - enabled: true
+                types: [api, audit, authenticator, controllerManager, scheduler]
+          upgradePolicy:
+            supportType: STANDARD
+          tags:
+            project: ai-foundations-eks
+            stage: platform
+            env: ${schema.spec.env}
+
+    - id: adminAccess
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: AccessEntry
+        metadata:
+          name: ${schema.spec.name}-admin
+        spec:
+          clusterRef:
+            from:
+              name: ${cluster.metadata.name}
+          principalARN: ${platform.data.adminRoleARN}
+          type: STANDARD
+          accessPolicies:
+            - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+              accessScope: {type: cluster}
+          tags: {project: ai-foundations-eks, stage: platform}
+
+    - id: ideAccess
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: AccessEntry
+        metadata:
+          name: ${schema.spec.name}-ide
+        spec:
+          clusterRef:
+            from:
+              name: ${cluster.metadata.name}
+          principalARN: ${platform.data.ideRoleARN}
+          type: STANDARD
+          accessPolicies:
+            - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+              accessScope: {type: cluster}
+          tags: {project: ai-foundations-eks, stage: platform}
+
+    - id: argocdAccess
+      includeWhen:
+        - ${schema.spec.argocd}
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: AccessEntry
+        metadata:
+          name: ${schema.spec.name}-argocd
+        spec:
+          clusterRef:
+            from:
+              name: ${cluster.metadata.name}
+          principalARN: ${platform.data.argocdRoleARN}
+          type: STANDARD
+          accessPolicies:
+            - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+              accessScope: {type: cluster}
+          tags: {project: ai-foundations-eks, stage: platform}
+
+    - id: kroRole
+      includeWhen:
+        - ${schema.spec.kro}
+      template:
+        apiVersion: iam.services.k8s.aws/v1alpha1
+        kind: Role
+        metadata:
+          name: ${schema.spec.name}-kro
+        spec:
+          name: aif-${schema.spec.name}-kro
+          path: /aif/
+          description: kro capability on aif-${schema.spec.name}; no AWS permissions
+          permissionsBoundary: ${platform.data.boundaryARN}
+          assumeRolePolicyDocument: >-
+            {"Version":"2012-10-17","Statement":[{"Effect":"Allow",
+            "Principal":{"Service":"capabilities.eks.amazonaws.com"},"Action":["sts:AssumeRole","sts:TagSession"]}]}
+          tags:
+            - {key: project, value: ai-foundations-eks}
+            - {key: stage, value: platform}
+
+    - id: kroCapability
+      includeWhen:
+        - ${schema.spec.kro}
+      template:
+        apiVersion: eks.services.k8s.aws/v1alpha1
+        kind: Capability
+        metadata:
+          name: ${schema.spec.name}-kro
+        spec:
+          name: kro
+          type: KRO
+          clusterRef:
+            from:
+              name: ${cluster.metadata.name}
+          roleRef:
+            from:
+              name: ${kroRole.metadata.name}
+          deletePropagationPolicy: RETAIN
+          tags: {project: ai-foundations-eks, stage: platform}
+
+    # Registers the cluster with the managed Argo CD on the Hub. The managed capability
+    # takes the EKS cluster ARN as the server and reaches private endpoints itself.
+    - id: argocdCluster
+      template:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: aif-${schema.spec.name}
+          namespace: argocd
+          labels:
+            argocd.argoproj.io/secret-type: cluster
+            platform.aws/env: ${schema.spec.env}
+            app.kubernetes.io/part-of: ai-foundations-eks
+        stringData:
+          name: ${schema.spec.name}
+          server: ${cluster.status.ackResourceMetadata.arn}
+          project: default
