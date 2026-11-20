@@ -253,13 +253,15 @@ class DownTest(CliHarness):
 
 class DevNetworkTest(CliHarness):
     def test_needs_account(self) -> None:
-        code, _, err = self.run_cli("dev", "network", "up", "--apply")
+        code, _, err = self.run_cli("dev", "network", "up", "--dev-standin", "--apply")
         self.assertEqual(code, EXIT_REFUSED)
         self.assertIn("--confirm-account is required", err)
 
     def test_dry_run(self) -> None:
         self.caller()
-        code, out, _ = self.run_cli("dev", "network", "up", "--confirm-account", ACCOUNT)
+        code, out, _ = self.run_cli(
+            "dev", "network", "up", "--dev-standin", "--confirm-account", ACCOUNT
+        )
         self.assertEqual(code, EXIT_OK)
         self.assertIn("plan: create the development network", out)
         self.assertEqual(self.dev_network.calls, [])
@@ -267,11 +269,13 @@ class DevNetworkTest(CliHarness):
     def test_up_and_down(self) -> None:
         self.caller()
         self.caller()
-        code, out, _ = self.run_cli("dev", "network", "up", "--confirm-account", ACCOUNT, "--apply")
+        code, out, _ = self.run_cli(
+            "dev", "network", "up", "--dev-standin", "--confirm-account", ACCOUNT, "--apply"
+        )
         self.assertEqual(code, EXIT_OK)
         self.assertIn("published inputs for VPC vpc-1", out)
         code, out, _ = self.run_cli(
-            "dev", "network", "down", "--confirm-account", ACCOUNT, "--apply"
+            "dev", "network", "down", "--dev-standin", "--confirm-account", ACCOUNT, "--apply"
         )
         self.assertEqual(code, EXIT_OK)
         self.assertEqual(self.dev_network.calls, ["ensure", "delete"])

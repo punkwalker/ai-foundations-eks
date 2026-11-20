@@ -144,6 +144,11 @@ def build_parser() -> argparse.ArgumentParser:
     network = dev_sub.add_parser("network", help="stand-in for the launch stack")
     network.add_argument("action", choices=("up", "down"))
     _add_change_flags(network, env_allowed=False)
+    network.add_argument(
+        "--dev-standin",
+        action="store_true",
+        help="required: the owner's dev account has no launch stack, so make a stand-in network",
+    )
 
     cleanup = sub.add_parser("cleanup", help="list leftover resources")
     cleanup.add_argument("--report", action="store_true", required=True, help="list only")
@@ -254,6 +259,9 @@ def cmd_down(ctx: Ctx, args: argparse.Namespace) -> int:
 
 def cmd_dev(ctx: Ctx, args: argparse.Namespace) -> int:
     """`aif dev network up|down`: the launch stack stand-in for a development account."""
+    if not args.dev_standin:
+        print("aif dev network: pass --dev-standin. At an event the launch stack provides it.")
+        return EXIT_REFUSED
     if not _confirm(ctx, args):
         return EXIT_REFUSED
     s = ctx.settings
