@@ -3,7 +3,8 @@ import unittest
 from fakes import FakeClock, FakeKube, app, hub_secret
 
 from aif import bringup
-from aif.argocd import APPLICATIONS
+from aif.argocd import APPLICATIONS, APPLICATIONSETS
+from aif.kube import KubeError
 from aif.stages import Stage
 
 S00 = Stage("00", "tenancy", "base", (), 8, ())
@@ -15,7 +16,7 @@ S13 = Stage("13", "capstone", "capstone", ("00",), None, ())
 
 class TimeoutTest(unittest.TestCase):
     def test_timeouts(self) -> None:
-        self.assertEqual(bringup.stage_timeout(S00), 960)
+        self.assertEqual(bringup.stage_timeout(S00), 960)  # 8 min budget in this test
         self.assertEqual(bringup.stage_timeout(Stage("02", "r", "a", (), 1, ())), 300)
         self.assertEqual(bringup.stage_timeout(S13), 600)
         self.assertIn("1. stage 00 [base] tenancy: timeout 960s", bringup.format_plan([S00]))
@@ -59,3 +60,39 @@ class BringUpTest(unittest.TestCase):
         result = self.run_up(S00, S07)
         self.assertEqual(list(result.failed), ["00"])
         self.assertEqual(result.skipped, ["07"])
+
+
+class WaitForArgoCdTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.hub = FakeKube()
+        self.hub.store(APPLICATIONSETS)
+        self.clock = FakeClock()
+
+    def wait(self) -> str | None:
+        return bringup.wait_for_argocd(self.hub, "argocd", 60, self.clock.clock())
+
+    def test_ready(self) -> None:
+        self.hub.secrets[("argocd", "hub")] = hub_secret()
+        self.assertIsNone(self.wait())
+
+    def test_retries_missing_crd(self) -> None:
+        self.hub.secrets[("argocd", "hub")] = hub_secret()
+        self.hub.fail_next = [KubeError(503, "Unavailable")]
+        self.assertIsNone(self.wait())
+        self.assertEqual(self.clock.sleeps, [5.0])
+
+    def test_timeout_says_why(self) -> None:
+        self.hub.fail_next = [KubeError(503, "Unavailable")] * 10
+        problem = self.wait() or ""
+        self.assertIn("timed out", problem)
+        self.assertIn("Argo CD API not ready", problem)
+
+    def test_permanent_error(self) -> None:
+        self.hub.fail_next = [KubeError(403, "Forbidden", "rbac")]
+        self.assertIn("Forbidden", self.wait() or "")
+
+    def test_seed_group_labels(self) -> None:
+        self.hub.secrets[("argocd", "hub")] = hub_secret()
+        changed = bringup.seed_group_labels(self.hub, "argocd", "hub", ["base", "c"])
+        self.assertEqual(changed, {"platform.aws/group-base": True, "platform.aws/group-c": True})
+        self.assertEqual(bringup.seed_group_labels(self.hub, "argocd", "hub", ["base"]), {})

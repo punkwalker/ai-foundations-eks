@@ -4,7 +4,7 @@ id: "06"
 name: KV cache
 group: b
 needs: ["00", "01", "03", "04"]
-# Plan budget: 2 min.
+# Budget: 2 min.
 budget_minutes: 2
 health_checks:
   - cache-hit-metric-rises-on-replay

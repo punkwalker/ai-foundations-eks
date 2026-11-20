@@ -22,11 +22,11 @@ class CostTest(unittest.TestCase):
     def test_sums_per_stage_and_total(self) -> None:
         self.path.write_text(
             HEADER
-            + "EKS,00,3,0.10,8,2.40,api,W2,\n"
-            + "NAT,00,1,0.045,8,0.36,api,W2,\n"
-            + "GPU,03-06,1,0.80,4,3.20,api,W4,\n"
-            + "Sandbox,09-10,1,verify,verify,verify,verify,W5,\n"
-            + "Bad,09-10,1,x,x,NaN,x,W5,\n"
+            + "EKS,00,3,0.10,8,2.40,api,test,\n"
+            + "NAT,00,1,0.045,8,0.36,api,test,\n"
+            + "GPU,03-06,1,0.80,4,3.20,api,test,\n"
+            + "Sandbox,09-10,1,verify,verify,verify,verify,test,\n"
+            + "Bad,09-10,1,x,x,NaN,x,test,\n"
         )
         summary = cost.summarize(self.path)
         self.assertEqual(summary.per_stage["00"], Decimal("2.76"))

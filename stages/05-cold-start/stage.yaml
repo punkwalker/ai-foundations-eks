@@ -4,7 +4,7 @@ id: "05"
 name: Cold start
 group: b
 needs: ["00", "01", "03", "04"]
-# Plan budget: 3-5 min.
+# Budget: 3-5 min.
 budget_minutes: 5
 health_checks:
   - scale-zero-to-one-first-token-in-target

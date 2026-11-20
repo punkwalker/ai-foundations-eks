@@ -9,6 +9,8 @@ import boto3
 from aif.teardown import AwsClients
 
 if TYPE_CHECKING:
+    from mypy_boto3_eks import EKSClient
+    from mypy_boto3_ssm import SSMClient
     from mypy_boto3_sts import STSClient
 
 ACCOUNT_ID = re.compile(r"^\d{12}$")
@@ -57,6 +59,14 @@ def confirm_account(sts: "STSClient", expected: str) -> Identity:
 
 def sts_client(region: str) -> "STSClient":
     return boto3.client("sts", region_name=region)
+
+
+def ssm_client(region: str) -> "SSMClient":
+    return boto3.client("ssm", region_name=region)
+
+
+def eks_client(region: str) -> "EKSClient":
+    return boto3.client("eks", region_name=region)
 
 
 def clients(region: str) -> AwsClients:
