@@ -19,3 +19,4 @@ Bedrock tokens,01-02,n/a,usage,verify,verify,verify,aif,Capped by the lab budget
 g6.xlarge GPU nodes,03-06,1-2,verify,verify,verify,verify,aif,"Estimate about 0.80. Scale to zero outside GPU stages"
 Sandbox nodes,09-10,1-2,verify,verify,verify,verify,aif,
 Langfuse ClickHouse and S3,12,1,verify,verify,verify,verify,aif,Smallest size
+Running now: Hub and dev stand-in network,00,1,0.19,1,0.19,"Sum of the rows above at 0 nodes: EKS 0.10 + capabilities 0.0384 + NAT 0.045 + EIP 0.005 + KMS 0.0014 + secrets 0.0011 (2026-11-20). Excludes CloudWatch usage",aif,"Hub aif-hub with ACK, kro and Argo CD, no Auto Mode nodes scheduled"
