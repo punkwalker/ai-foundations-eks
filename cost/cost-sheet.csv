@@ -1,12 +1,21 @@
 resource,stage,qty,unit_price_usd_per_hour,hours,est_cost_usd,price_source,created_by,notes
-EKS control plane,00,3,verify,verify,verify,verify,W2,"Hub, Dev, and Prod. Estimate 0.10 each"
-EKS Auto Mode management fee,00,per node,verify,verify,verify,verify,W2,Charged per managed node
-General nodes (Graviton),00,3-6,verify,verify,verify,verify,W2,Right-size after the first measured bring-up
-NAT gateway,00,1-3,verify,verify,verify,verify,W2,"Estimate 0.045 plus data. Decision D6 proposes one shared NAT gateway"
-IDE EC2 instance and GitLab,00,1-2,verify,verify,verify,verify,W2,Stop when idle
-CloudFront distribution,00,1,usage,verify,verify,verify,W2,GitLab endpoint
-Aurora Serverless v2 or RDS t4g,01,1,verify,verify,verify,verify,W3,Minimum capacity
-Bedrock tokens,01-02,n/a,usage,verify,verify,verify,W3,Capped by the lab budget
-g6.xlarge GPU nodes,03-06,1-2,verify,verify,verify,verify,W4,"Estimate about 0.80. Scale to zero outside GPU stages"
-Sandbox nodes,09-10,1-2,verify,verify,verify,verify,W5,
-Langfuse ClickHouse and S3,12,1,verify,verify,verify,verify,W6,Smallest size
+EKS control plane,00,3,0.10,8,2.40,Price List API AmazonEKS USW2-AmazonEKS-Hours:perCluster (2026-11-19),aif,"Hub (aif hub up), Dev and Prod (PlatformCluster RGD). Standard support only; extended support is 0.50 per hour"
+EKS Auto Mode management fee,00,per node,0.00816,verify,verify,Price List API AmazonEKS USW2-EKS-Auto:c6g.large-management-hours (2026-11-19),aif,"Per managed node, by instance type. 0.00816 is c6g.large; m7g.large is 0.00979"
+General nodes (Graviton),00,3-6,0.068,verify,verify,Price List API AmazonEC2 USW2-BoxUsage:c6g.large (2026-11-19),aif,"Example size c6g.large. Right-size after the first measured bring-up. Zero nodes while no pod is scheduled"
+NAT gateway,00,1,0.045,8,0.36,Price List API AmazonEC2 USW2-NatGateway-Hours (2026-11-19),aif,"One shared NAT gateway (D6; aif dev network stand-in in the dev account). Plus 0.045 per GB processed"
+Public IPv4 address (NAT gateway EIP),00,1,0.005,8,0.04,Price List API AmazonVPC USW2-PublicIPv4:InUseAddress (2026-11-19),aif,aif dev network stand-in
+EKS capability ACK,00,1,0.004757,8,0.04,Price List API AmazonEKS USW2-AmazonEKSCapabilities-ACK-Hours:perCapability (2026-11-19),aif,"Hub. Plus 0.000048 per ACK resource per hour"
+EKS capability kro,00,1,0.004757,8,0.04,Price List API AmazonEKS USW2-AmazonEKSCapabilities-KRO-Hours:perCapability (2026-11-19),aif,"Hub; one more per spoke with kro on. Plus 0.000047 per RGD instance per hour"
+EKS capability Argo CD,00,1,0.028838,8,0.23,Price List API AmazonEKS USW2-AmazonEKSCapabilities-ArgoCD-Hours:perCapability (2026-11-19),aif,"Hub, capability mode only. Plus 0.00142 per Argo CD Application per hour"
+KMS customer managed key,00,1,0.00137,8,0.01,Price List API awskms us-west-2-KMS-Keys (2026-11-19),aif,"1 USD per key per month (730 h): alias/aif-platform, shared by all aif clusters. Plus 0.03 per 10000 requests"
+Secrets Manager secrets,00,2,0.000548,8,0.01,Price List API AWSSecretsManager USW2-AWSSecretsManager-Secrets (2026-11-19),aif,"0.40 per secret per month (730 h): aif/keycloak/admin and aif/litellm/master-key"
+CloudWatch Logs (EKS control plane and VPC flow logs),00,usage,usage,verify,verify,Price List API AmazonCloudWatch USW2-DataProcessing-Bytes and USW2-VendedLog-Bytes (2026-11-19),aif,"0.50 per GB ingested, 0.03 per GB-month stored. Retention 7 days"
+S3 model bucket,00,usage,usage,verify,verify,Price List API AmazonS3 USW2-TimedStorage-ByteHrs (2026-11-19),aif,"0.023 per GB-month (first 50 TB). Weights and compile caches"
+ECR repositories,00,usage,usage,verify,verify,Price List API AmazonECR USW2-TimedStorage-ByteHrs (2026-11-19),aif,0.10 per GB-month
+IDE EC2 instance and GitLab,00,1-2,verify,verify,verify,verify,aif,Stop when idle
+CloudFront distribution,00,1,usage,verify,verify,verify,aif,GitLab endpoint
+Aurora Serverless v2 or RDS t4g,01,1,verify,verify,verify,verify,aif,Minimum capacity
+Bedrock tokens,01-02,n/a,usage,verify,verify,verify,aif,Capped by the lab budget
+g6.xlarge GPU nodes,03-06,1-2,verify,verify,verify,verify,aif,"Estimate about 0.80. Scale to zero outside GPU stages"
+Sandbox nodes,09-10,1-2,verify,verify,verify,verify,aif,
+Langfuse ClickHouse and S3,12,1,verify,verify,verify,verify,aif,Smallest size

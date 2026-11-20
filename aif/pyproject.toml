@@ -16,7 +16,7 @@ aif = "aif.cli:main"
 
 [dependency-groups]
 dev = [
-    "boto3-stubs[cloudformation,ec2,ecr,elbv2,iam,resourcegroupstaggingapi,s3,secretsmanager,sts]>=1.44.6",
+    "boto3-stubs[cloudformation,ec2,ecr,eks,elbv2,iam,identitystore,kms,logs,resourcegroupstaggingapi,s3,secretsmanager,ssm,sso-admin,sts]>=1.44.6",
     "mypy>=1.18",
     "pytest>=8.4",
     "pytest-cov>=7.1.0",

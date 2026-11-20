@@ -74,6 +74,10 @@ class KubeApi(Protocol):
 
     def patch_secret(self, namespace: str, name: str, body: Obj) -> Obj: ...
 
+    def create_secret(self, namespace: str, body: Obj) -> Obj: ...
+
+    def list_secrets(self, namespace: str, label_selector: str = "") -> list[Obj]: ...
+
 
 CRDS = Resource(CRD_GROUP, "v1", "customresourcedefinitions", "CustomResourceDefinition", False)
 
@@ -208,3 +212,14 @@ class ClientKubeApi:
     def patch_secret(self, namespace: str, name: str, body: Obj) -> Obj:
         out = self._call(self._core.patch_namespaced_secret, name, namespace, body)
         return dict(self._core.api_client.sanitize_for_serialization(out))
+
+    def create_secret(self, namespace: str, body: Obj) -> Obj:
+        out = self._call(self._core.create_namespaced_secret, namespace, body)
+        return dict(self._core.api_client.sanitize_for_serialization(out))
+
+    def list_secrets(self, namespace: str, label_selector: str = "") -> list[Obj]:
+        out = self._call(
+            self._core.list_namespaced_secret, namespace, label_selector=label_selector
+        )
+        items = self._core.api_client.sanitize_for_serialization(out).get("items", [])
+        return [dict(i) for i in items]

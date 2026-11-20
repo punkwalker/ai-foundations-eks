@@ -19,7 +19,9 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(s.project, "ai-foundations-eks")
         self.assertEqual(s.argocd_mode, "capability")
         self.assertEqual(s.groups, config.GROUPS)
-        self.assertEqual(s.contexts.as_dict(), {"hub": "hub", "dev": "dev", "prod": "prod"})
+        self.assertEqual(
+            s.contexts.as_dict(), {"hub": "aif-hub", "dev": "aif-dev", "prod": "aif-prod"}
+        )
 
     def test_file_then_env(self) -> None:
         (self.root / "aif.toml").write_text(

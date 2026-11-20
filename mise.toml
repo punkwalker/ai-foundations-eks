@@ -8,7 +8,7 @@ lockfile = true
 [tools]
 python = "3.12.16"
 uv = "0.13.9"
-# Node LTS, for a TypeScript CDK app in infra/ if one is added.
+# Node LTS, for tools that need it. The repo has no CDK app (D13).
 node = "24.22.3"
 # go-task, the Taskfile.yaml runner.
 task = "3.54.0"

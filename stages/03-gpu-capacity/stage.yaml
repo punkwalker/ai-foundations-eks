@@ -4,7 +4,7 @@ id: "03"
 name: GPU capacity
 group: b
 needs: ["00", "01"]
-# Plan budget: 3-5 min after the GPU node launches.
+# Budget: 3-5 min after the GPU node launches.
 budget_minutes: 5
 health_checks:
   - test-workload-admitted-on-gpu-node

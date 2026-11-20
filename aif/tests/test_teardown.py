@@ -1,9 +1,10 @@
 import unittest
 from contextlib import ExitStack
+from dataclasses import replace
 from typing import Any
 
 from botocore.stub import Stubber
-from fakes import FakeClock, FakeKube, app, hub_secret, obj, offline_client
+from fakes import FakeClock, FakeHub, FakeKube, app, hub_secret, launch_inputs, obj, offline_client
 
 from aif.argocd import APPLICATIONS
 from aif.inventory import Inventory, Item
@@ -235,3 +236,73 @@ class TeardownTest(unittest.TestCase):
         inv = Inventory(items=[Item("kro", "hub", "Team", "x", "unassigned")])
         with self.assertRaises(ValueError):
             self.teardown().run(inv, [])
+
+
+class HubStepTest(TeardownTest):
+    """The Hub goes after the pre-delete steps and before the final sweep."""
+
+    def fake_hub(self) -> FakeHub:
+        hub = FakeHub()
+        hub.ensure_hub(launch_inputs())
+        hub.hub_status()
+        hub.ensure_capabilities(launch_inputs(), "capability")
+        hub.capability_status()
+        hub.calls.clear()
+        return hub
+
+    def test_hub_removed_in_order_then_sweep(self) -> None:
+        hub = self.fake_hub()
+        with ExitStack() as stack:
+            stubs = self.stub_all(stack)
+            stubs["tagging"].add_response("get_resources", {"ResourceTagMappingList": []})
+            teardown = self.teardown()
+            teardown.hub_api = hub
+            result = teardown.run(self.inventory(), ["03", "00"])
+        self.assertTrue(result.ok, result.problems)
+        self.assertEqual(hub.calls, ["delete_capabilities", "delete_hub", "delete_platform"])
+        self.assertIn("Hub platform removed", self.log)
+
+    def test_failed_capability_delete_stops(self) -> None:
+        hub = self.fake_hub()
+        hub.stuck = True
+        hub.caps["ack"] = replace(hub.caps["ack"], status="DELETE_FAILED")
+        hub.delete_capabilities = lambda: hub.calls.append("delete_capabilities")  # type: ignore[method-assign]
+        with ExitStack() as stack:
+            self.stub_all(stack)
+            teardown = self.teardown()
+            teardown.hub_api = hub
+            result = teardown.run(self.inventory(), ["03", "00"])
+        self.assertFalse(result.ok)
+        self.assertIn("capabilities ['ack'] failed to delete", result.problems[0])
+        self.assertEqual(hub.calls, ["delete_capabilities"])
+
+    def test_failed_cluster_delete_stops(self) -> None:
+        hub = self.fake_hub()
+        hub.caps.clear()
+        hub.delete_hub = lambda: setattr(  # type: ignore[method-assign]
+            hub,
+            "cluster",
+            replace(hub.cluster, status="FAILED"),  # type: ignore[type-var]
+        )
+        with ExitStack() as stack:
+            self.stub_all(stack)
+            teardown = self.teardown()
+            teardown.hub_api = hub
+            result = teardown.run(self.inventory(), ["03", "00"])
+        self.assertFalse(result.ok)
+        self.assertIn("aif-hub is FAILED", result.problems[0])
+
+    def test_forced_finalizers_that_still_hang(self) -> None:
+        self.hub.stuck.add("weights")
+        real_patch = self.hub.patch_object
+
+        def keep_finalizers(*args: Any, **kwargs: Any) -> Any:
+            return {}
+
+        self.hub.patch_object = keep_finalizers  # type: ignore[method-assign]
+        with ExitStack() as stack:
+            self.stub_all(stack)
+            result = self.teardown(force_finalizers=True).run(self.inventory(), ["03", "00"])
+        self.hub.patch_object = real_patch  # type: ignore[method-assign]
+        self.assertFalse(result.ok)
+        self.assertIn("after force", result.problems[0])

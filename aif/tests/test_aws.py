@@ -6,7 +6,7 @@ from fakes import offline_client
 
 from aif import aws
 
-ARN = "arn:aws:sts::111122223333:assumed-role/Admin/owner-session"
+ARN = "arn:aws:sts::111122223333:assumed-role/Admin/session"
 
 
 class RoleNameTest(unittest.TestCase):
@@ -72,4 +72,6 @@ class ClientsTest(unittest.TestCase):
         self.assertIsNotNone(built.tagging)
         with mock.patch("boto3.client") as client:
             aws.sts_client("us-west-2")
-        client.assert_called_once_with("sts", region_name="us-west-2")
+            aws.ssm_client("us-west-2")
+            aws.eks_client("us-west-2")
+        self.assertEqual([c.args[0] for c in client.call_args_list], ["sts", "ssm", "eks"])

@@ -1,0 +1,41 @@
+---
+# Default general NodePool on Graviton (arm64) for every aif cluster on EKS Auto Mode.
+# Its weight puts it ahead of the built-in general-purpose pool (amd64), which stays
+# enabled for images that have no arm64 build. Applied by Argo CD, not by CDK.
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: general-graviton
+  labels:
+    app.kubernetes.io/part-of: ai-foundations-eks
+spec:
+  weight: 50
+  template:
+    metadata:
+      labels:
+        aif.io/pool: general-graviton
+    spec:
+      nodeClassRef:
+        group: eks.amazonaws.com
+        kind: NodeClass
+        name: default
+      expireAfter: 336h
+      requirements:
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["arm64"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]
+        - key: eks.amazonaws.com/instance-category
+          operator: In
+          values: ["c", "m", "r"]
+        - key: eks.amazonaws.com/instance-generation
+          operator: Gt
+          values: ["6"]
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 2m
+  limits:
+    cpu: "64"
+    memory: 256Gi
