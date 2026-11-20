@@ -8,7 +8,7 @@ This folder holds `aif`, the Python command line tool that provisions, checks, a
 |---|---|
 | `aif up` | Print the bring-up plan. Add `--apply` to build the Hub, its capabilities, and every stage |
 | `aif down --confirm-account ID` | Print the teardown plan. Add `--apply` to remove the lab |
-| `aif dev network up` or `down` | In a development account, create or remove a stand-in for the launch stack |
+| `aif dev network up --dev-standin` or `down --dev-standin` | In a development account, create or remove a stand-in for the launch stack |
 | `aif status` | Show each stage, its label state, and its Applications that are not ready |
 | `aif doctor` | Show the Argo CD mode, sign-in method, AWS identity, and unhealthy Applications |
 | `aif stage on NN` or `aif stage off NN` | Turn a stage on with its needs, or off with its dependents |

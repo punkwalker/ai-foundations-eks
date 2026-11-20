@@ -6,11 +6,13 @@ from typing import Any
 
 from botocore.exceptions import ClientError
 
+from aif.hub_api import HubError as HubApiError
+
 Tags = Mapping[str, str]
 
 
-class HubError(RuntimeError):
-    """A Hub step cannot go on. The message says what to do."""
+HubError = HubApiError
+"""A Hub step cannot go on. The message says what to do."""
 
 
 def code(err: ClientError) -> str:

@@ -188,6 +188,140 @@ def role_specs(scope: Scope, key_arn: str, argocd: bool) -> list[iam.RoleSpec]:
     return specs
 
 
+class HubBuilder:
+    """The Hub steps, each safe to run again. `up()` runs them in order; `BotoHub` runs them
+    one at a time for `aif up`."""
+
+    def __init__(
+        self,
+        c: HubClients,
+        region: str,
+        project_tags: Mapping[str, str],
+        options: HubOptions,
+        *,
+        clock: Clock | None = None,
+    ) -> None:
+        self.c = c
+        self.region = region
+        self.options = options
+        self.clock = clock
+        self.tags = {**project_tags, "stage": STAGE_TAG}
+        self.report = Report()
+        self.scope = scope_of(c.sts, region)
+        self.argocd = options.argocd_mode == "capability"
+        self.boundary_arn = ""
+        self.key_arn = ""
+        self.roles: dict[str, str] = {}
+        self.hub: dict[str, Any] = {}
+        self.cap_arns: dict[str, str] = {}
+        self.groups: dict[str, str] = {}
+
+    def check(self, found: inputs.HubInputs) -> None:
+        if self.argocd and found.idc is None:
+            raise HubError(
+                f"argocd mode is capability but {Param.IDC_INSTANCE} is not set. The launch "
+                "template creates IAM Identity Center; or set argocd_mode = helm."
+            )
+
+    def platform(self) -> None:
+        """Boundary, KMS key, bucket, repositories and secrets."""
+        c, tags, rep = self.c, self.tags, self.report
+        self.boundary_arn = iam.ensure_boundary(c.iam, self.scope, tags, rep)
+        self.key_arn = cluster.ensure_key(c.kms, tags, rep)
+        bucket = model_bucket(self.scope.account, self.region)
+        storage.ensure_bucket(c.s3, bucket, self.scope, tags, rep)
+        for repo in ECR_REPOSITORIES:
+            storage.ensure_repository(c.ecr, repo, tags, rep)
+        for secret in SECRETS:
+            storage.ensure_secret(c.secretsmanager, secret, tags, rep)
+
+    def cluster(self, found: inputs.HubInputs) -> None:
+        """Roles, log group, the Hub cluster (waits until ACTIVE) and its access entries."""
+        c, tags, rep = self.c, self.tags, self.report
+        self.platform_ready()
+        self.roles = {
+            s.name: iam.ensure_role(c.iam, s, self.scope, tags, rep)
+            for s in role_specs(self.scope, self.key_arn, self.argocd)
+        }
+        cluster.ensure_log_group(c.logs, HUB_CLUSTER, tags, rep)
+        spec = cluster.ClusterSpec(
+            name=HUB_CLUSTER,
+            version=self.options.kubernetes_version,
+            role_arn=self.roles[CLUSTER_ROLE],
+            node_role_arn=self.roles[NODE_ROLE],
+            key_arn=self.key_arn,
+            subnets=found.private_subnets,
+            public_cidrs=self.options.public_cidrs,
+        )
+        self.hub = cluster.ensure_cluster(c.eks, spec, tags, rep, clock=self.clock)
+        sg = self.hub["resourcesVpcConfig"]["clusterSecurityGroupId"]
+        cluster.allow_api_from(c.ec2, sg, found.ide_security_group, tags, rep)
+        for principal in dict.fromkeys((found.admin_role_arn, found.ide_role_arn)):
+            cluster.ensure_admin_entry(c.eks, HUB_CLUSTER, principal, tags, rep)
+
+    def platform_ready(self) -> None:
+        if not self.key_arn:
+            self.key_arn = cluster.ensure_key(self.c.kms, self.tags, self.report)
+        if not self.boundary_arn:
+            self.boundary_arn = iam.ensure_boundary(self.c.iam, self.scope, self.tags, self.report)
+
+    def capabilities(self, found: inputs.HubInputs) -> None:
+        """ACK and kro, plus Argo CD in capability mode. Waits until each is ACTIVE."""
+        c, tags, rep = self.c, self.tags, self.report
+        if not self.roles:
+            self.cluster(found)
+        caps: list[capabilities.CapabilitySpec] = [
+            capabilities.CapabilitySpec("ack", "ACK", self.roles[ACK_ROLE]),
+            capabilities.CapabilitySpec("kro", "KRO", self.roles[KRO_ROLE]),
+        ]
+        if self.argocd and found.idc is not None:
+            self.groups = capabilities.ensure_groups(
+                c.identitystore, found.idc.identity_store_id, rep
+            )
+            caps.append(
+                capabilities.CapabilitySpec(
+                    "argocd",
+                    "ARGOCD",
+                    self.roles[ARGOCD_ROLE],
+                    capabilities.argocd_configuration(
+                        found.idc.instance_arn, self.region, self.groups
+                    ),
+                )
+            )
+        self.cap_arns = {
+            s.name: capabilities.ensure_capability(
+                c.eks, HUB_CLUSTER, s, tags, rep, clock=self.clock
+            )
+            for s in caps
+        }
+
+    def publish(self) -> dict[str, str]:
+        """Write the outputs to SSM under /aif/."""
+        hub = self.hub
+        issuer = str(hub.get("identity", {}).get("oidc", {}).get("issuer", ""))
+        outputs = {
+            Param.BOUNDARY_ARN: self.boundary_arn,
+            Param.KEY_ARN: self.key_arn,
+            Param.MODEL_BUCKET: model_bucket(self.scope.account, self.region),
+            Param.ARGOCD_MODE: self.options.argocd_mode,
+            Param.cluster("hub", "name"): HUB_CLUSTER,
+            Param.cluster("hub", "arn"): str(hub["arn"]),
+            Param.cluster("hub", "endpoint"): str(hub["endpoint"]),
+            Param.cluster("hub", "oidc-issuer-id"): issuer.rsplit("/", 1)[-1],
+            Param.cluster("hub", "security-group-id"): hub["resourcesVpcConfig"][
+                "clusterSecurityGroupId"
+            ],
+            Param.cluster("hub", "node-role-arn"): self.roles[NODE_ROLE],
+            Param.cluster("hub", "platform-clusters-role-arn"): self.roles[PLATFORM_CLUSTERS_ROLE],
+            **{Param.capability(name): arn for name, arn in self.cap_arns.items()},
+            **{Param.argocd_group(role): gid for role, gid in self.groups.items()},
+        }
+        if self.argocd:
+            outputs[Param.cluster("hub", "argocd-role-arn")] = self.roles[ARGOCD_ROLE]
+        storage.publish(self.c.ssm, outputs, self.tags)
+        return outputs
+
+
 def up(
     c: HubClients,
     region: str,
@@ -198,95 +332,17 @@ def up(
     log: Any = print,
 ) -> HubResult:
     """Bring up the Hub. Raises HubError or inputs.InputError with what to fix."""
-    result = HubResult()
-    rep = result.report
-    tags = {**project_tags, "stage": STAGE_TAG}
     found = inputs.read(c.ssm)
-    argocd = options.argocd_mode == "capability"
-    if argocd and found.idc is None:
-        raise HubError(
-            f"argocd mode is capability but {Param.IDC_INSTANCE} is not set. The launch "
-            "template creates IAM Identity Center; or set argocd_mode = helm."
-        )
-    scope = scope_of(c.sts, region)
-
-    log("step 1/6: IAM boundary and roles")
-    boundary_arn = iam.ensure_boundary(c.iam, scope, tags, rep)
-    log("step 2/6: KMS key and log group")
-    key_arn = cluster.ensure_key(c.kms, tags, rep)
-    roles = {
-        s.name: iam.ensure_role(c.iam, s, scope, tags, rep)
-        for s in role_specs(scope, key_arn, argocd)
-    }
-    cluster.ensure_log_group(c.logs, HUB_CLUSTER, tags, rep)
-
-    log("step 3/6: Hub cluster (up to 25 minutes on first run)")
-    spec = cluster.ClusterSpec(
-        name=HUB_CLUSTER,
-        version=options.kubernetes_version,
-        role_arn=roles[CLUSTER_ROLE],
-        node_role_arn=roles[NODE_ROLE],
-        key_arn=key_arn,
-        subnets=found.private_subnets,
-        public_cidrs=options.public_cidrs,
-    )
-    hub = cluster.ensure_cluster(c.eks, spec, tags, rep, clock=clock)
-    cluster_sg = hub["resourcesVpcConfig"]["clusterSecurityGroupId"]
-    cluster.allow_api_from(c.ec2, cluster_sg, found.ide_security_group, tags, rep)
-    for principal in dict.fromkeys((found.admin_role_arn, found.ide_role_arn)):
-        cluster.ensure_admin_entry(c.eks, HUB_CLUSTER, principal, tags, rep)
-
-    log("step 4/6: capabilities")
-    caps: list[capabilities.CapabilitySpec] = [
-        capabilities.CapabilitySpec("ack", "ACK", roles[ACK_ROLE]),
-        capabilities.CapabilitySpec("kro", "KRO", roles[KRO_ROLE]),
-    ]
-    groups: dict[str, str] = {}
-    if argocd and found.idc is not None:
-        groups = capabilities.ensure_groups(c.identitystore, found.idc.identity_store_id, rep)
-        caps.append(
-            capabilities.CapabilitySpec(
-                "argocd",
-                "ARGOCD",
-                roles[ARGOCD_ROLE],
-                capabilities.argocd_configuration(found.idc.instance_arn, region, groups),
-            )
-        )
-    cap_arns = {
-        s.name: capabilities.ensure_capability(c.eks, HUB_CLUSTER, s, tags, rep, clock=clock)
-        for s in caps
-    }
-
-    log("step 5/6: bucket, repositories, secrets")
-    bucket = model_bucket(scope.account, region)
-    storage.ensure_bucket(c.s3, bucket, scope, tags, rep)
-    for repo in ECR_REPOSITORIES:
-        storage.ensure_repository(c.ecr, repo, tags, rep)
-    for secret in SECRETS:
-        storage.ensure_secret(c.secretsmanager, secret, tags, rep)
-
-    log("step 6/6: outputs to SSM")
-    issuer = str(hub.get("identity", {}).get("oidc", {}).get("issuer", ""))
-    outputs = {
-        Param.BOUNDARY_ARN: boundary_arn,
-        Param.KEY_ARN: key_arn,
-        Param.MODEL_BUCKET: bucket,
-        Param.ARGOCD_MODE: options.argocd_mode,
-        Param.cluster("hub", "name"): HUB_CLUSTER,
-        Param.cluster("hub", "arn"): str(hub["arn"]),
-        Param.cluster("hub", "endpoint"): str(hub["endpoint"]),
-        Param.cluster("hub", "oidc-issuer-id"): issuer.rsplit("/", 1)[-1],
-        Param.cluster("hub", "security-group-id"): cluster_sg,
-        Param.cluster("hub", "node-role-arn"): roles[NODE_ROLE],
-        Param.cluster("hub", "platform-clusters-role-arn"): roles[PLATFORM_CLUSTERS_ROLE],
-        **{Param.capability(name): arn for name, arn in cap_arns.items()},
-        **{Param.argocd_group(role): gid for role, gid in groups.items()},
-    }
-    if argocd:
-        outputs[Param.cluster("hub", "argocd-role-arn")] = roles[ARGOCD_ROLE]
-    storage.publish(c.ssm, outputs, tags)
-    result.outputs = outputs
-    return result
+    build = HubBuilder(c, region, project_tags, options, clock=clock)
+    build.check(found)
+    log("step 1/4: IAM boundary, KMS key, bucket, repositories, secrets")
+    build.platform()
+    log("step 2/4: roles and the Hub cluster (up to 25 minutes on first run)")
+    build.cluster(found)
+    log("step 3/4: capabilities")
+    build.capabilities(found)
+    log("step 4/4: outputs to SSM")
+    return HubResult(report=build.report, outputs=build.publish())
 
 
 def needed_inputs() -> Sequence[str]:
