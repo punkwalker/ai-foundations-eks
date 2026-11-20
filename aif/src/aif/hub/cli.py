@@ -1,6 +1,6 @@
 """Command line for `aif hub up` and `aif dev network up|down`.
 
-W2 owns `aif/cli.py`. To wire these in, it calls `register(sub)` from `build_parser`
+`aif/cli.py` wires these in. It calls `register(sub)` from `build_parser`
 and adds `COMMANDS` from this module to its dispatch table. Each handler takes the
 loaded Settings and the parsed arguments and returns an exit code.
 """
